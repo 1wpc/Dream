@@ -6,8 +6,13 @@ class DeepSeekService {
   static const String _apiKey = 'sk-c9bfee1559c84971a736c525a6470fc3'; 
 
   // 生成梦境场景描述
-  static Future<Map<String, List<String>>> generateDreamScene() async {
+  static Future<Map<String, List<String>>> generateDreamScene({String? styleKeywords}) async {
     try {
+      // 构建风格相关的提示
+      final stylePrompt = styleKeywords != null 
+        ? '请特别注意生成${styleKeywords}风格的梦境场景。' 
+        : '';
+        
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: {
@@ -20,6 +25,8 @@ class DeepSeekService {
             {
               'role': 'system',
               'content': '''你是一个专业的梦境编织者，需要生成用于AI绘画的提示词和诗意解释。
+$stylePrompt
+
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", ...],
@@ -38,6 +45,7 @@ class DeepSeekService {
    - 氛围和风格
 4. 使用逗号分隔各个要素
 5. 每个场景生成3-5个提示词
+${styleKeywords != null ? '6. 必须体现$styleKeywords的风格特征' : ''}
 
 诗意解释要求：
 1. 用中文描述
@@ -59,7 +67,9 @@ class DeepSeekService {
             },
             {
               'role': 'user',
-              'content': '请为我生成一个梦幻场景的提示词和诗意解释。'
+              'content': styleKeywords != null 
+                ? '请为我生成一个$styleKeywords风格的梦幻场景。'
+                : '请为我生成一个梦幻场景的提示词和诗意解释。'
             }
           ],
           'stream': false,
@@ -83,8 +93,13 @@ class DeepSeekService {
   }
 
   // 生成梦境剧本
-  static Future<Map<String, List<String>>> generateDreamScript() async {
+  static Future<Map<String, List<String>>> generateDreamScript({String? styleKeywords}) async {
     try {
+      // 构建风格相关的提示
+      final stylePrompt = styleKeywords != null 
+        ? '请特别注意生成${styleKeywords}风格的梦境场景。' 
+        : '';
+      
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: {
@@ -97,6 +112,8 @@ class DeepSeekService {
             {
               'role': 'system',
               'content': '''你是一个富有想象力的梦境编织者，需要创作一个完整的梦境故事，包含多个场景的提示词和诗意解释。
+$stylePrompt
+
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", "场景3的提示词", ...],
@@ -116,6 +133,7 @@ class DeepSeekService {
 4. 场景之间要有故事性和连贯性，形成一个完整的梦境故事
 5. 每个场景生成3-5个提示词
 6. 场景要富有想象力和美感
+${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 
 诗意解释要求：
 1. 用中文描述
@@ -141,7 +159,9 @@ class DeepSeekService {
             },
             {
               'role': 'user',
-              'content': '请为我创作一个完整的梦境剧本。'
+              'content': styleKeywords != null 
+                ? '请为我创作一个$styleKeywords风格的梦境剧本。'
+                : '请为我创作一个完整的梦境剧本。'
             }
           ],
           'stream': false,

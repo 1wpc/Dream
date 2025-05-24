@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'daydream_page.dart';
+import 'dream_style_selection_page.dart';
 import 'dream_record_page.dart';
 import 'zhougong_dream_page.dart';
 
@@ -60,7 +60,7 @@ class DreamCorePage extends StatelessWidget {
                           () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const DaydreamPage(),
+                                builder: (context) => const DreamStyleSelectionPage(),
                               ),
                             );
                           },

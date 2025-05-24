@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/deepseek_service.dart';
 import '../services/jimeng_service.dart';
+import 'dream_style_selection_page.dart';
 import 'dart:async';
 
 // 加载期间显示的名言列表
@@ -28,7 +29,9 @@ List<String> splitToColumns(String text, int colLen) {
 }
 
 class DaydreamPage extends StatefulWidget {
-  const DaydreamPage({super.key});
+  final DreamStyle? dreamStyle;
+  
+  const DaydreamPage({super.key, this.dreamStyle});
 
   @override
   State<DaydreamPage> createState() => _DaydreamPageState();
@@ -79,8 +82,10 @@ class _DaydreamPageState extends State<DaydreamPage> {
     });
 
     try {
-      // 调用 DeepSeek API 生成梦境剧本
-      final result = await DeepSeekService.generateDreamScript();
+      // 调用 DeepSeek API 生成梦境剧本，传递风格关键词
+      final result = await DeepSeekService.generateDreamScript(
+        styleKeywords: widget.dreamStyle?.keywords,
+      );
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
       
@@ -125,8 +130,10 @@ class _DaydreamPageState extends State<DaydreamPage> {
     });
 
     try {
-      // 调用 DeepSeek API 生成新的场景描述
-      final result = await DeepSeekService.generateDreamScene();
+      // 调用 DeepSeek API 生成新的场景描述，传递风格关键词
+      final result = await DeepSeekService.generateDreamScene(
+        styleKeywords: widget.dreamStyle?.keywords,
+      );
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
       

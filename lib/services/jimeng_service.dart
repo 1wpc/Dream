@@ -151,11 +151,11 @@ class JimengService {
         }
         throw Exception('生成图片失败: ${data['message']}');
       } else {
-        debugPrint('请求详情：');
-        debugPrint('URL: $_endpoint?$formattedQuery');
-        debugPrint('Headers: $headers');
-        debugPrint('Body: $formattedBody');
-        debugPrint('Response: ${response.data}');
+        // debugPrint('请求详情：');
+        // debugPrint('URL: $_endpoint?$formattedQuery');
+        // debugPrint('Headers: $headers');
+        // debugPrint('Body: $formattedBody');
+        // debugPrint('Response: ${response.data}');
         throw Exception('API请求失败: ${response.statusCode} - ${response.data}');
       }
     } catch (e) {
