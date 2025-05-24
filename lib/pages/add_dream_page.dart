@@ -91,7 +91,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
       await _databaseService.insertDream(dream);
       
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('保存成功')),
         );

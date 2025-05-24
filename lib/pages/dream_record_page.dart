@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import 'package:intl/intl.dart';
 import 'add_dream_page.dart';
-import 'dream_detail_page.dart';
+import 'dream_detail_page_enhanced.dart';
+import 'edit_dream_page.dart';
 
 class DreamRecordPage extends StatefulWidget {
   const DreamRecordPage({super.key});
@@ -143,7 +144,7 @@ class _DreamRecordPageState extends State<DreamRecordPage> {
                                   final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => DreamDetailPage(
+                                      builder: (context) => DreamDetailPageEnhanced(
                                         dream: dream,
                                       ),
                                     ),

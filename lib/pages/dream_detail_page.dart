@@ -3,6 +3,7 @@ import '../services/database_service.dart';
 import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 
 class DreamDetailPage extends StatefulWidget {
   final DreamRecord dream;
@@ -35,12 +36,25 @@ class _DreamDetailPageState extends State<DreamDetailPage> {
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
-    final progress = (currentScroll / maxScroll).clamp(0.0, 1.0);
-    setState(() {
-      _scrollProgress = progress;
-    });
+    
+    // 减少setState的调用频率，只在变化超过一定阈值时更新
+    double newProgress;
+    if (currentScroll <= 0) {
+      newProgress = (currentScroll / 300).clamp(-1.0, 0.0); // 增加下拉距离
+    } else {
+      newProgress = (currentScroll / maxScroll).clamp(0.0, 1.0);
+    }
+    
+    // 只在变化超过0.01时才更新，减少重建
+    if ((newProgress - _scrollProgress).abs() > 0.01) {
+      setState(() {
+        _scrollProgress = newProgress;
+      });
+    }
   }
 
   Future<void> _deleteDream() async {
@@ -69,7 +83,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> {
       try {
         await _databaseService.deleteDream(widget.dream.id!);
         if (mounted) {
-          Navigator.pop(context, true); // 返回并通知列表页面刷新
+          Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('删除成功')),
           );
@@ -84,236 +98,340 @@ class _DreamDetailPageState extends State<DreamDetailPage> {
     }
   }
 
+  Widget _buildBackgroundImage() {
+    return widget.dream.imageUrl != null
+        ? FutureBuilder<bool>(
+            future: File(widget.dream.imageUrl!).exists(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.blue.shade900,
+                        Colors.purple.shade900,
+                      ],
+                    ),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                );
+              }
+              
+              if (snapshot.hasError || !snapshot.data!) {
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.blue.shade900,
+                        Colors.purple.shade900,
+                      ],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.nights_stay,
+                      color: Colors.white,
+                      size: 64,
+                    ),
+                  ),
+                );
+              }
+
+              return Image.file(
+                File(widget.dream.imageUrl!),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.blue.shade900,
+                          Colors.purple.shade900,
+                        ],
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.nights_stay,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          )
+        : Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue.shade900,
+                  Colors.purple.shade900,
+                ],
+              ),
+            ),
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 设置状态栏为亮色内容
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     
+    final screenHeight = MediaQuery.of(context).size.height;
+    final expandedHeight = screenHeight * 0.6;
+    
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditDreamPage(dream: widget.dream),
-                ),
-              );
-              if (result == true && mounted) {
-                Navigator.pop(context, true); // 返回并通知列表页面刷新
-              }
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // 使用SliverAppBar实现真正的下拉效果
+          SliverAppBar(
+            expandedHeight: expandedHeight,
+            pinned: true,
+            stretch: true, // 允许拉伸
+            onStretchTrigger: () async {
+              // 可以在这里添加下拉触发的逻辑
+              HapticFeedback.lightImpact();
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _deleteDream,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // 背景图片
-          Positioned.fill(
-            child: Opacity(
-              opacity: 1 - _scrollProgress,
-              child: widget.dream.imageUrl != null
-                  ? FutureBuilder<bool>(
-                      future: File(widget.dream.imageUrl!).exists(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        
-                        if (snapshot.hasError || !snapshot.data!) {
-                          return Container(
-                            color: Colors.blue.shade900,
-                            child: const Center(
-                              child: Icon(
-                                Icons.error_outline,
-                                color: Colors.white,
-                                size: 48,
-                              ),
-                            ),
-                          );
-                        }
-
-                        return Image.file(
-                          File(widget.dream.imageUrl!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.blue.shade900,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.error_outline,
-                                  color: Colors.white,
-                                  size: 48,
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    )
-                  : Container(
-                      color: Colors.blue.shade900,
-                    ),
-            ),
-          ),
-          // 渐变背景
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.white.withOpacity(_scrollProgress),
-                  ],
-                  stops: const [0.0, 0.3],
-                ),
+            backgroundColor: _scrollProgress > 0.5 
+                ? Colors.white.withOpacity(0.9) 
+                : Colors.transparent,
+            elevation: _scrollProgress > 0.5 ? 4 : 0,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: _scrollProgress > 0.5 ? Colors.black : Colors.white,
               ),
+              onPressed: () => Navigator.pop(context),
             ),
-          ),
-          // 内容
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // 标题区域
-              SliverToBoxAdapter(
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.5,  // 调整高度
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.dream.title,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(1 - _scrollProgress),
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.dream.time,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(1 - _scrollProgress),
-                          fontSize: 16,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.edit,
+                  color: _scrollProgress > 0.5 ? Colors.black : Colors.white,
                 ),
-              ),
-              // 内容区域
-              SliverFillRemaining(  // 使用SliverFillRemaining代替SliverToBoxAdapter
-                hasScrollBody: false,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),  // 轻微透明度让背景若隐若现
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditDreamPage(dream: widget.dream),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '梦境内容',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A237E),  // 深蓝色标题
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          widget.dream.content,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),  // 用Spacer来填充底部剩余空间
-                      // 添加一个底部区域，避免完全空白
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 24, bottom: 16),
-                          child: Text(
-                            '记录于 ${_formatDate(widget.dream.time)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  );
+                  if (result == true && mounted) {
+                    Navigator.pop(context, true);
+                  }
+                },
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: _scrollProgress > 0.5 ? Colors.black : Colors.white,
                 ),
+                onPressed: _deleteDream,
               ),
             ],
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.blurBackground,
+              ],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // 背景图片
+                  _buildBackgroundImage(),
+                  // 渐变遮罩
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.3),
+                          Colors.black.withOpacity(0.6),
+                        ],
+                        stops: const [0.0, 0.6, 1.0],
+                      ),
+                    ),
+                  ),
+                  // 标题信息
+                  Positioned(
+                    bottom: 60,
+                    left: 24,
+                    right: 24,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.dream.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black54,
+                                  offset: Offset(0, 2),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formatDate(widget.dream.time),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black54,
+                                  offset: Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 内容区域
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 顶部拖拽指示器
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 20),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.nights_stay,
+                              color: Colors.blue.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '梦境内容',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A237E),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            widget.dream.content,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.8,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        // 底部装饰区域
+                        Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                color: Colors.grey.shade400,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '愿美梦成真',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
   
-  // 格式化日期
   String _formatDate(String isoString) {
     try {
       final date = DateTime.parse(isoString);
