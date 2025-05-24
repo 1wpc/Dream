@@ -9,4 +9,10 @@ abstract class Env {
 
   @EnviedField(varName: 'JIMENG_KEY_ID', obfuscate: true)
   static final String jimengKeyId = _Env.jimengKeyId;
+
+  @EnviedField(varName: 'YIJU_APP_ID', obfuscate: true)
+  static final String yijuAppId = _Env.yijuAppId;
+
+  @EnviedField(varName: 'YIJU_APP_SC', obfuscate: true)
+  static final String yijuAppSc = _Env.yijuAppSc;
 }

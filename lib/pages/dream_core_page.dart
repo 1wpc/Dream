@@ -11,16 +11,25 @@ class DreamCorePage extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // 全景背景
+          // 渐变背景
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/dream_background.jpg',
-              fit: BoxFit.cover,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF8A9BA8),  // 浅灰蓝色
+                    Color(0xFF6D7B8A),  // 中灰蓝色
+                    Color(0xFF4A5568),  // 深灰蓝色
+                  ],
+                ),
+              ),
             ),
           ),
-          // 半透明遮罩
+          // 半透明遮罩 - 可以保留或移除，视效果而定
           Container(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withOpacity(0.1),
           ),
           // 功能模块
           SafeArea(
@@ -140,4 +149,4 @@ class DreamCorePage extends StatelessWidget {
       ),
     );
   }
-} 
+}
