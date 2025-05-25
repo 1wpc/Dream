@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../services/deepseek_service.dart';
+import '../services/dream_api_service.dart';
 import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,7 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
   double _scrollOffset = 0.0; // 滚动偏移量
   final DatabaseService _databaseService = DatabaseService();
   final DeepSeekService _deepSeekService = DeepSeekService();
+  final DreamApiService _dreamApiService = DreamApiService();
   
   // 缓存背景组件
   Widget? _cachedBackgroundWidget;
@@ -33,6 +35,9 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
   String? _dreamInterpretation;
   bool _showInterpretation = false;
   String _streamingText = ''; // 流式输出的累积文本
+
+  // 分享相关状态
+  bool _isSharing = false;
 
   @override
   void initState() {
@@ -654,6 +659,22 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
                       onPressed: () => Navigator.pop(context),
                     ),
                     const Spacer(),
+                    // 分享按钮
+                    IconButton(
+                      icon: _isSharing 
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                              ),
+                            )
+                          : Icon(Icons.share, color: iconColor),
+                      onPressed: _isSharing ? null : () {
+                        _showShareOptions();
+                      },
+                    ),
                     IconButton(
                       icon: Icon(Icons.edit, color: iconColor),
                       onPressed: () async {
@@ -733,6 +754,194 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
       return '${date.year}年${date.month}月${date.day}日 ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return isoString;
+    }
+  }
+
+  void _showShareOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '分享梦境到社区',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    '选择分享方式：',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  // 快速分享选项
+                  ListTile(
+                    leading: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.flash_on,
+                        color: Colors.blue.shade600,
+                      ),
+                    ),
+                    title: Text('快速分享'),
+                    subtitle: Text('自动识别分类和标签，匿名发布'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _quickShare();
+                    },
+                  ),
+                  SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 分享梦境到社区  
+  Future<void> _shareToCommunity() async {
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final sharedPost = await DreamApiService.quickShareDream(
+        dreamRecord: widget.dream,
+        authorNickname: '匿名梦想家',
+      );
+
+      setState(() {
+        _isSharing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('梦境已成功分享到一起做梦社区！'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '查看',
+              textColor: Colors.white,
+              onPressed: () {
+                // TODO: 导航到论坛页面
+              },
+            ),
+          ),
+        );
+        HapticFeedback.lightImpact();
+      }
+    } catch (e) {
+      setState(() {
+        _isSharing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('分享失败：${e.toString().replaceAll('Exception: ', '')}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  // 快速分享梦境
+  Future<void> _quickShare() async {
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final sharedPost = await DreamApiService.quickShareDream(
+        dreamRecord: widget.dream,
+        authorNickname: '匿名梦想家',
+      );
+
+      setState(() {
+        _isSharing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('梦境已快速分享到社区！'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        HapticFeedback.lightImpact();
+      }
+    } catch (e) {
+      setState(() {
+        _isSharing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('快速分享失败：${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 } 

@@ -135,12 +135,12 @@ class _DreamCorePageState extends State<DreamCorePage>
 
   Widget _buildDreamBackground() {
     return Positioned.fill(
-      child: Container(
+        child: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
               Color(0xFF1a1c2e), // 深紫蓝
               Color(0xFF2d1b69), // 深紫
               Color(0xFF11001a), // 深黑紫
@@ -374,9 +374,9 @@ class _DreamCorePageState extends State<DreamCorePage>
             ),
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -394,11 +394,11 @@ class _DreamCorePageState extends State<DreamCorePage>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
+              Text(
                     feature.title,
-                    style: const TextStyle(
+                style: const TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                     textAlign: TextAlign.center,

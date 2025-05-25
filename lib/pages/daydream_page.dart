@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../services/deepseek_service.dart';
 import '../services/jimeng_service.dart';
 import 'dream_style_selection_page.dart';
@@ -50,12 +51,18 @@ class _DaydreamPageState extends State<DaydreamPage> {
   int _currentQuoteIndex = 0;
   // 定时器
   Timer? _quoteTimer;
+  
+  // 音频播放器相关
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isMusicPlaying = false;
+  bool _isMusicLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _initializeDream();
     _startQuoteTimer();
+    _initializeAudio();
   }
 
   void _startQuoteTimer() {
@@ -69,9 +76,85 @@ class _DaydreamPageState extends State<DaydreamPage> {
     });
   }
 
+  // 初始化音频
+  Future<void> _initializeAudio() async {
+    try {
+      // 设置循环播放
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      // 设置音量为30%
+      await _audioPlayer.setVolume(0.3);
+      
+      setState(() {
+        _isMusicLoaded = true;
+      });
+      
+      // 监听播放状态变化
+      _audioPlayer.onPlayerStateChanged.listen((PlayerState state) {
+        if (mounted) {
+          setState(() {
+            _isMusicPlaying = state == PlayerState.playing;
+          });
+        }
+      });
+      
+      debugPrint('音频初始化成功');
+    } catch (e) {
+      debugPrint('音频初始化失败: $e');
+      setState(() {
+        _isMusicLoaded = false;
+      });
+    }
+  }
+
+  // 切换音乐播放状态
+  Future<void> _toggleMusic() async {
+    if (!_isMusicLoaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔇 音频功能暂不可用'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    try {
+      if (_isMusicPlaying) {
+        await _audioPlayer.pause();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('🔇 背景音乐已暂停'),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.grey.shade600,
+          ),
+        );
+      } else {
+        await _audioPlayer.play(AssetSource('audio/dream_music.mp3'));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('🎵 背景音乐已开启'),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.green.shade600,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('音乐播放控制失败: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🔇 播放失败: ${e.toString().contains('FileSystemException') ? '音频文件不存在' : '播放错误'}'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _quoteTimer?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -177,6 +260,15 @@ class _DaydreamPageState extends State<DaydreamPage> {
       });
     } else {
       _generateNewScene();
+    }
+  }
+
+  // 切换到上一个场景
+  void _previousScene() {
+    if (_currentSceneIndex > 0) {
+      setState(() {
+        _currentSceneIndex--;
+      });
     }
   }
 
@@ -360,15 +452,171 @@ class _DaydreamPageState extends State<DaydreamPage> {
                 ),
               ),
             ),
+          
+          // 音乐控制按钮 - 右上角
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: _isMusicPlaying ? Colors.green.shade300 : Colors.white.withOpacity(0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    _isMusicPlaying ? Icons.music_note : Icons.music_off,
+                    key: ValueKey(_isMusicPlaying),
+                    color: _isMusicPlaying ? Colors.green.shade300 : Colors.white,
+                    size: 24,
+                  ),
+                ),
+                onPressed: _isMusicLoaded ? _toggleMusic : null,
+                tooltip: _isMusicPlaying ? '暂停音乐' : '播放音乐',
+                splashColor: _isMusicPlaying ? Colors.green.withOpacity(0.3) : Colors.white.withOpacity(0.3),
+                highlightColor: _isMusicPlaying ? Colors.green.withOpacity(0.2) : Colors.white.withOpacity(0.2),
+              ),
+            ),
+          ),
+          
+          // 场景指示器
+          if (!_isLoading && _scenes.isNotEmpty && _scenes.length > 1)
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_currentSceneIndex + 1} / ${_scenes.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // 场景指示器
+          if (!_isLoading && _scenes.isNotEmpty && _scenes.length > 1)
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_currentSceneIndex + 1} / ${_scenes.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // 场景切换按钮
+          if (!_isLoading && _scenes.isNotEmpty) ...[
+            // 左箭头 - 上一个场景（只在不是第一个场景时显示）
+            if (_currentSceneIndex > 0)
+              Positioned(
+                left: 20,
+                bottom: 30,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: _previousScene,
+                    tooltip: '上一个场景',
+                    splashColor: Colors.white.withOpacity(0.3),
+                    highlightColor: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+              ),
+            // 右箭头 - 下一个场景
+            Positioned(
+              right: 20,
+              bottom: 30,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.blue.shade300.withOpacity(0.6),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _currentSceneIndex < _scenes.length - 1 
+                        ? Icons.arrow_forward 
+                        : Icons.add,
+                    color: Colors.blue.shade300,
+                    size: 24,
+                  ),
+                  onPressed: _nextScene,
+                  tooltip: _currentSceneIndex < _scenes.length - 1 
+                      ? '下一个场景' 
+                      : '生成新场景',
+                  splashColor: Colors.blue.withOpacity(0.3),
+                  highlightColor: Colors.blue.withOpacity(0.2),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
-      // 点击切换场景
-      floatingActionButton: !_isLoading && _scenes.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _nextScene,
-              child: const Icon(Icons.arrow_forward),
-            )
-          : null,
     );
   }
 }
