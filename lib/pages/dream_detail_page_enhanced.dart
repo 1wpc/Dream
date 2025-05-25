@@ -5,6 +5,7 @@ import '../services/dream_api_service.dart';
 import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
+// import 'package:flutter_markdown/flutter_markdown.dart'; // 待依赖安装后启用
 
 class DreamDetailPageEnhanced extends StatefulWidget {
   final DreamRecord dream;
@@ -150,6 +151,102 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
         );
       }
     }
+  }
+
+  // 简单的markdown样式文本渲染函数
+  Widget _buildMarkdownText(String text) {
+    final lines = text.split('\n');
+    List<Widget> widgets = [];
+    
+    for (String line in lines) {
+      line = line.trim();
+      if (line.isEmpty) {
+        widgets.add(const SizedBox(height: 8));
+        continue;
+      }
+      
+      // 处理标题 **文本**
+      if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            line.substring(2, line.length - 2),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A237E),
+              height: 1.5,
+            ),
+          ),
+        ));
+      }
+      // 处理小标题或重点文字
+      else if (line.contains('**')) {
+        List<TextSpan> spans = [];
+        RegExp boldRegex = RegExp(r'\*\*(.*?)\*\*');
+        int lastEnd = 0;
+        
+        for (Match match in boldRegex.allMatches(line)) {
+          if (match.start > lastEnd) {
+            spans.add(TextSpan(
+              text: line.substring(lastEnd, match.start),
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.8,
+                color: Color(0xFF333333),
+              ),
+            ));
+          }
+          spans.add(TextSpan(
+            text: match.group(1),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A237E),
+              height: 1.8,
+            ),
+          ));
+          lastEnd = match.end;
+        }
+        
+        if (lastEnd < line.length) {
+          spans.add(TextSpan(
+            text: line.substring(lastEnd),
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.8,
+              color: Color(0xFF333333),
+            ),
+          ));
+        }
+        
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: RichText(
+            text: TextSpan(children: spans),
+          ),
+        ));
+      }
+      // 普通文本
+      else {
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Text(
+            line,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.8,
+              color: Color(0xFF333333),
+            ),
+          ),
+        ));
+      }
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
   }
 
   Future<void> _deleteDream() async {
@@ -560,20 +657,13 @@ class _DreamDetailPageEnhancedState extends State<DreamDetailPageEnhanced> with 
                                             ],
                                           ),
                                           const SizedBox(height: 16),
-                                          // 显示流式文本或完整文本
+                                          // 显示流式文本或完整文本（使用Markdown渲染）
                                           AnimatedSwitcher(
                                             duration: const Duration(milliseconds: 300),
-                                            child: Text(
-                                              _isInterpreting && _streamingText.isNotEmpty 
-                                                  ? _streamingText 
-                                                  : (_dreamInterpretation ?? '正在分析您的梦境...'),
-                                              key: ValueKey(_isInterpreting ? _streamingText : _dreamInterpretation),
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                                height: 1.8,
-                                                color: Color(0xFF333333),
-                                              ),
-                                            ),
+                                            child: _buildMarkdownText(_isInterpreting && _streamingText.isNotEmpty 
+                                                ? _streamingText 
+                                                : (_dreamInterpretation ?? '正在分析您的梦境...')),
+                                            key: ValueKey(_isInterpreting ? _streamingText : _dreamInterpretation),
                                           ),
                                           // 流式输出时的打字机光标效果
                                           if (_isInterpreting && _streamingText.isNotEmpty)

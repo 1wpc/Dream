@@ -65,6 +65,9 @@ class _DreamForumPageState extends State<DreamForumPage>
       final category = _selectedCategoryIndex == 0 ? null : _categories[_selectedCategoryIndex];
       final dreams = await DreamApiService.getDreams(category: category);
       
+      // 再次确保数据按发布时间降序排列
+      dreams.sort((a, b) => b.publishTime.compareTo(a.publishTime));
+      
       setState(() {
         _dreamPosts = dreams;
         _isLoading = false;
@@ -76,6 +79,11 @@ class _DreamForumPageState extends State<DreamForumPage>
       });
       print('加载梦境失败: $e');
     }
+  }
+
+  // 刷新数据
+  Future<void> _refreshDreams() async {
+    await _loadDreams();
   }
 
   // 搜索梦境
@@ -95,6 +103,9 @@ class _DreamForumPageState extends State<DreamForumPage>
       });
 
       final results = await DreamApiService.searchDreams(query);
+      
+      // 确保搜索结果也按发布时间降序排列
+      results.sort((a, b) => b.publishTime.compareTo(a.publishTime));
       
       setState(() {
         _searchResults = results;
@@ -130,15 +141,20 @@ class _DreamForumPageState extends State<DreamForumPage>
   }
 
   List<DreamPost> get _filteredPosts {
+    List<DreamPost> posts;
+    
     if (_searchController.text.isNotEmpty) {
-      return _searchResults;
+      posts = _searchResults;
+    } else if (_selectedCategoryIndex == 0) {
+      posts = _dreamPosts;
+    } else {
+      final selectedCategory = _categories[_selectedCategoryIndex];
+      posts = _dreamPosts.where((post) => post.category == selectedCategory).toList();
     }
     
-    if (_selectedCategoryIndex == 0) {
-      return _dreamPosts;
-    }
-    final selectedCategory = _categories[_selectedCategoryIndex];
-    return _dreamPosts.where((post) => post.category == selectedCategory).toList();
+    // 确保帖子按发布时间降序排列（最新的在前）
+    posts.sort((a, b) => b.publishTime.compareTo(a.publishTime));
+    return posts;
   }
 
   @override
@@ -161,6 +177,10 @@ class _DreamForumPageState extends State<DreamForumPage>
                 
                 // 分类标签
                 _buildCategoryTabs(),
+                
+                // 排序提示
+                if (!_isLoading && _dreamPosts.isNotEmpty)
+                  _buildSortIndicator(),
                 
                 // 瀑布流内容
                 Expanded(
@@ -350,6 +370,39 @@ class _DreamForumPageState extends State<DreamForumPage>
     );
   }
 
+  Widget _buildSortIndicator() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule,
+            color: Colors.white.withOpacity(0.7),
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '按最新发布时间排序',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDreamWaterfall() {
     if (_isLoading) {
       return Center(
@@ -443,13 +496,18 @@ class _DreamForumPageState extends State<DreamForumPage>
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: posts.length,
-      itemBuilder: (context, index) {
-        return _buildDreamCard(posts[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: _refreshDreams,
+      color: Colors.white,
+      backgroundColor: Colors.purple.shade300,
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: posts.length,
+        itemBuilder: (context, index) {
+          return _buildDreamCard(posts[index]);
+        },
+      ),
     );
   }
 

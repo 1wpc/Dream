@@ -279,8 +279,9 @@ class DreamApiService {
   // 搜索梦境
   static Future<List<DreamPost>> searchDreams(String query) async {
     try {
+      // 添加排序参数确保搜索结果也按发布时间降序排列
       final response = await http.get(
-        Uri.parse('$baseUrl/dreams?q=$query'),
+        Uri.parse('$baseUrl/dreams?q=$query&_sort=publishTime&_order=desc'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(Duration(seconds: 10));
       

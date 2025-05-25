@@ -171,6 +171,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
       );
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
+      final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();
       
       // 调用即梦AI生成图片
       final imageUrls = await JimengService.generateImages(prompts);
@@ -183,6 +184,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
               imageUrl: imageUrls[i],
               prompt: prompts[i],
               description: explanations[i],
+              englishDescription: englishDescriptions[i],
             ),
           );
         }
@@ -219,6 +221,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
       );
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
+      final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();
       
       // 调用即梦AI生成图片
       final imageUrls = await JimengService.generateImages(prompts);
@@ -230,6 +233,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
               imageUrl: imageUrls[i],
               prompt: prompts[i],
               description: explanations[i],
+              englishDescription: englishDescriptions[i],
             ),
           );
         }
@@ -417,10 +421,11 @@ class _DaydreamPageState extends State<DaydreamPage> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '提示词: ${_scenes[_currentSceneIndex].prompt}',
+                          _scenes[_currentSceneIndex].englishDescription,
                           style: const TextStyle(
                             color: Colors.white70,
-                            fontSize: 12,
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -626,10 +631,12 @@ class DreamScene {
   final String imageUrl;
   final String prompt;
   final String description;
+  final String englishDescription; // 新增英文描述字段
 
   DreamScene({
     required this.imageUrl,
     required this.prompt,
     required this.description,
+    required this.englishDescription,
   });
 }

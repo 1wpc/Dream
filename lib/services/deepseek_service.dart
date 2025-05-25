@@ -30,7 +30,8 @@ $stylePrompt
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", ...],
-  "explanations": ["场景1的诗意解释", "场景2的诗意解释", ...]
+  "explanations": ["场景1的诗意解释", "场景2的诗意解释", ...],
+  "englishDescriptions": ["场景1的英文描述", "场景2的英文描述", ...]
 }
 
 提示词要求：
@@ -53,6 +54,12 @@ ${styleKeywords != null ? '6. 必须体现$styleKeywords的风格特征' : ''}
 3. 长度控制在20字以内
 4. 要含蓄且富有意境
 
+英文描述要求：
+1. 用英文描述
+2. 简洁优雅，富有意境
+3. 长度控制在10个单词以内
+4. 要呼应中文的诗意
+
 示例输出：
 {
   "prompts": [
@@ -62,6 +69,10 @@ ${styleKeywords != null ? '6. 必须体现$styleKeywords的风格特征' : ''}
   "explanations": [
     "林间光影，如梦似幻",
     "月下古寺，禅意悠然"
+  ],
+  "englishDescriptions": [
+    "Golden light through mystical woods",
+    "Moonlit temple in serene meditation"
   ]
 }'''
             },
@@ -83,6 +94,7 @@ ${styleKeywords != null ? '6. 必须体现$styleKeywords的风格特征' : ''}
         return {
           'prompts': (result['prompts'] as List).cast<String>(),
           'explanations': (result['explanations'] as List).cast<String>(),
+          'englishDescriptions': (result['englishDescriptions'] as List).cast<String>(),
         };
       } else {
         throw Exception('API请求失败: ${response.statusCode}');
@@ -117,7 +129,8 @@ $stylePrompt
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", "场景3的提示词", ...],
-  "explanations": ["场景1的诗意解释", "场景2的诗意解释", "场景3的诗意解释", ...]
+  "explanations": ["场景1的诗意解释", "场景2的诗意解释", "场景3的诗意解释", ...],
+  "englishDescriptions": ["场景1的英文描述", "场景2的英文描述", "场景3的英文描述", ...]
 }
 
 提示词要求：
@@ -143,6 +156,13 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 5. 解释之间要有情感上的联系，形成一个完整的故事
 6. 可以包含一些哲理性的思考
 
+英文描述要求：
+1. 用英文描述
+2. 简洁优雅，富有意境
+3. 长度控制在10个单词以内
+4. 要呼应中文的诗意
+5. 描述之间要有连贯性
+
 示例输出：
 {
   "prompts": [
@@ -154,6 +174,11 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
     "林间光影，如梦似幻，仿佛置身于童话世界",
     "月下古寺，禅意悠然，心若止水",
     "晶洞晨光，心若明镜，照见本心"
+  ],
+  "englishDescriptions": [
+    "Golden light through mystical fairy woods",
+    "Moonlit temple in serene meditation",
+    "Crystal cave reflecting inner light"
   ]
 }'''
             },
@@ -175,6 +200,7 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
         return {
           'prompts': (result['prompts'] as List).cast<String>(),
           'explanations': (result['explanations'] as List).cast<String>(),
+          'englishDescriptions': (result['englishDescriptions'] as List).cast<String>(),
         };
       } else {
         throw Exception('API请求失败: ${response.statusCode}');
@@ -208,25 +234,33 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 4. **个人化**：结合梦境的具体细节
 5. **实用建议**：提供生活中的启发和建议
 
-解析格式参考：
+请使用以下markdown格式输出：
+
 **🔮 梦境概述**
+
 简要概括梦境的主要内容和情感色彩。
 
 **💭 心理寓意**
+
 从心理学角度分析梦境反映的内心状态和潜意识信息。
 
 **🌟 象征解读**
+
 解释梦境中主要元素的象征意义。
 
 **💡 生活启示**
+
 结合梦境内容，给出对现实生活的建议和启发。
 
 **🌸 积极寄语**
+
 以温暖的话语结束解析，给予正能量。
 
-语言要求：
-- 用中文回答
-- 语气温和、专业
+格式要求：
+- 使用markdown语法，标题用 **文字** 格式
+- 每个部分之间空一行
+- 重要词汇可以用 **粗体** 强调
+- 用中文回答，语气温和、专业
 - 避免过于深奥的术语
 - 字数控制在300-500字之间
 - 富有共情力和治愈性'''
@@ -305,25 +339,33 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 4. **个人化**：结合梦境的具体细节
 5. **实用建议**：提供生活中的启发和建议
 
-解析格式参考：
+请使用以下markdown格式输出：
+
 **🔮 梦境概述**
+
 简要概括梦境的主要内容和情感色彩。
 
 **💭 心理寓意**
+
 从心理学角度分析梦境反映的内心状态和潜意识信息。
 
 **🌟 象征解读**
+
 解释梦境中主要元素的象征意义。
 
 **💡 生活启示**
+
 结合梦境内容，给出对现实生活的建议和启发。
 
 **🌸 积极寄语**
+
 以温暖的话语结束解析，给予正能量。
 
-语言要求：
-- 用中文回答
-- 语气温和、专业
+格式要求：
+- 使用markdown语法，标题用 **文字** 格式
+- 每个部分之间空一行
+- 重要词汇可以用 **粗体** 强调
+- 用中文回答，语气温和、专业
 - 避免过于深奥的术语
 - 字数控制在300-500字之间
 - 富有共情力和治愈性'''
