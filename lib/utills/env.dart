@@ -15,4 +15,7 @@ abstract class Env {
 
   @EnviedField(varName: 'YIJU_APP_SC', obfuscate: true)
   static final String yijuAppSc = _Env.yijuAppSc;
+
+  @EnviedField(varName: 'BACKEND_API_URL', obfuscate: true)
+  static final String backendApiUrl = _Env.backendApiUrl;
 }

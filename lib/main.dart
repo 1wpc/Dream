@@ -2,12 +2,33 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import '../utills/env.dart';
-import 'pages/dream_core_page.dart';
+import 'pages/main_container_page.dart';
+import 'pages/login_page.dart';
+import 'services/api_service.dart';
+import 'services/auth_service.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
-// 如需打字机动画可引入 animated_text_kit 包，暂用自定义动画
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化API服务
+  try {
+    ApiService.init();
+    print('API服务初始化成功');
+    
+    // 检查API连接状态
+    final isConnected = await ApiService.checkConnection();
+    if (isConnected) {
+      print('后端API连接正常');
+    } else {
+      print('后端API连接失败，将使用本地存储模式');
+    }
+  } catch (e) {
+    print('API服务初始化失败: $e');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -16,11 +37,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+      ],
+      child: MaterialApp(
       title: '白日做梦',
       theme: ThemeData.dark(),
       home: const SplashPage(),
       debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -41,6 +67,21 @@ class _SplashPageState extends State<SplashPage> {
   void initState() {
     super.initState();
     _dailyWordFuture = _fetchDailyWord();
+    _initializeAuth();
+  }
+
+  // 初始化身份认证
+  Future<void> _initializeAuth() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      // 尝试初始化认证状态
+      await authService.initAuth();
+    } catch (e) {
+      print('初始化身份认证失败: $e');
+      // 如果API认证失败，尝试从本地加载用户信息
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.loadUserProfileFromLocal();
+    }
   }
 
   Future<String> _fetchDailyWord() async {
@@ -65,8 +106,13 @@ class _SplashPageState extends State<SplashPage> {
   void _goToMainPage() {
     if (_navigated) return;
     _navigated = true;
+    
+    // 根据登录状态导航到不同页面
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final targetPage = authService.isLoggedIn ? const MainContainerPage() : const LoginPage();
+    
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const DreamCorePage()),
+      MaterialPageRoute(builder: (context) => targetPage),
     );
   }
 
