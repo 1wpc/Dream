@@ -4,6 +4,8 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../services/auth_service.dart';
 import '../models/dream_models.dart';
 import 'login_page.dart';
+import 'privacy_policy_page.dart';
+import 'purchase_credits_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -341,61 +343,70 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.grey.withOpacity(0.1),
                   blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: Column(
               children: [
                 _buildMenuItem(
-                  icon: Icons.account_balance_wallet,
-                  title: '我的积分',
-                  subtitle: '查看积分明细',
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: '用户钱包',
                   onTap: () {
-                    // TODO: 跳转到积分明细页面
+                    // TODO: 跳转到钱包详情页面
                   },
                 ),
-                _buildMenuItem(
-                  icon: Icons.history,
-                  title: '我的梦境',
-                  subtitle: '查看梦境记录',
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                 _buildMenuItem(
+                  icon: Icons.shopping_cart_checkout_rounded,
+                  title: '购买积分',
                   onTap: () {
-                    // TODO: 跳转到梦境记录页面
+                     Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const PurchaseCreditsPage()),
+                    );
                   },
                 ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
                 _buildMenuItem(
-                  icon: Icons.settings,
-                  title: '设置',
-                  subtitle: '应用设置',
+                  icon: Icons.privacy_tip_outlined,
+                  title: '查看隐私协议',
                   onTap: () {
-                    // TODO: 跳转到设置页面
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+                    );
                   },
-                ),
-                _buildMenuItem(
-                  icon: Icons.help_outline,
-                  title: '帮助与反馈',
-                  subtitle: '使用帮助',
-                  onTap: () {
-                    // TODO: 跳转到帮助页面
-                  },
-                ),
-                _buildMenuItem(
-                  icon: Icons.logout,
-                  title: '退出登录',
-                  subtitle: '安全退出',
-                  onTap: _showLogoutDialog,
-                  showDivider: false,
                 ),
               ],
             ),
           ),
-          
-          const SizedBox(height: 40),
+
+          const SizedBox(height: 24),
+
+          // 退出登录按钮
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+               boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: _buildMenuItem(
+              icon: Icons.logout,
+              title: '退出登录',
+              onTap: _showLogoutDialog,
+              showDivider: false,
+            ),
+          )
         ],
       ),
     );
@@ -454,59 +465,57 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 菜单项
+  // 构建菜单项
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
-    required String subtitle,
+    String? subtitle,
     required VoidCallback onTap,
     bool showDivider = true,
   }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6B73FF).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: const Color(0xFF6B73FF),
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.grey[600]),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              ),
+            ],
           ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
-          trailing: const Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.grey,
-          ),
-          onTap: onTap,
         ),
-        if (showDivider)
-          Divider(
-            height: 1,
-            color: Colors.grey.withOpacity(0.2),
-            indent: 16,
-            endIndent: 16,
-          ),
-      ],
+      ),
     );
   }
 } 
