@@ -8,6 +8,7 @@ import 'pages/main_container_page.dart';
 import 'pages/login_page.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
+import 'services/payment_service.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
 void main() async {
@@ -27,6 +28,14 @@ void main() async {
     }
   } catch (e) {
     print('API服务初始化失败: $e');
+  }
+  
+  // 初始化支付服务
+  try {
+    PaymentService().initialize();
+    print('支付服务初始化成功');
+  } catch (e) {
+    print('支付服务初始化失败: $e');
   }
   
   runApp(const MyApp());
