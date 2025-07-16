@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../services/auth_service.dart';
-import '../models/dream_models.dart';
+import '../services/points_service.dart';
 import 'login_page.dart';
 import 'privacy_policy_page.dart';
 import 'purchase_credits_page.dart';
@@ -15,16 +15,159 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  PointsBalance? _pointsBalance;
+  bool _isLoadingPoints = false;
+  late PointsService _pointsService;
+
   @override
   void initState() {
     super.initState();
     // 初始化时刷新用户信息
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = Provider.of<AuthService>(context, listen: false);
+      _pointsService = PointsService();
       if (authService.isLoggedIn) {
-        // 这里可以添加刷新用户信息的逻辑
+        _loadPointsBalance();
       }
     });
+  }
+
+  /// 加载积分余额
+  Future<void> _loadPointsBalance() async {
+    if (_isLoadingPoints) return;
+    
+    setState(() {
+      _isLoadingPoints = true;
+    });
+
+    try {
+      final pointsBalance = await _pointsService.getPointsBalance();
+      if (mounted) {
+        setState(() {
+          _pointsBalance = pointsBalance;
+          _isLoadingPoints = false;
+        });
+      }
+    } catch (e) {
+      print('加载积分余额失败: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPoints = false;
+        });
+      }
+    }
+  }
+
+  /// 显示积分详情对话框
+  Future<void> _showPointsDetailDialog() async {
+    // 如果还没有加载积分数据，先加载
+    if (_pointsBalance == null && !_isLoadingPoints) {
+      await _loadPointsBalance();
+    }
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.orange),
+              const SizedBox(width: 8),
+              const Text('积分详情'),
+            ],
+          ),
+          content: _pointsBalance == null
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isLoadingPoints) ...[
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const Text('正在加载积分信息...'),
+                    ] else ... [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Text('暂无积分信息'),
+                    ],
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow('当前余额', _pointsBalance!.pointsBalance, Colors.orange),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('总获得积分', _pointsBalance!.totalPointsEarned, Colors.green),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('总消费积分', _pointsBalance!.totalPointsSpent, Colors.red),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '点击积分卡片可刷新最新数据',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('关闭'),
+            ),
+            if (_pointsBalance != null)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _loadPointsBalance(); // 刷新数据
+                },
+                child: const Text('刷新'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 构建详情行
+  Widget _buildDetailRow(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
   }
 
   // 显示编辑个人信息对话框
@@ -309,12 +452,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  '积分',
-                  '${user?.points ?? 0}',
-                  Icons.star,
-                  Colors.orange,
-                ),
+                child: _buildPointsCard(),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -356,9 +494,12 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildMenuItem(
                   icon: Icons.account_balance_wallet_outlined,
-                  title: '用户钱包',
+                  title: '积分详情',
+                  subtitle: _pointsBalance != null 
+                    ? '余额: ${_pointsBalance!.pointsBalance} | 总获得: ${_pointsBalance!.totalPointsEarned}'
+                    : '点击查看详细积分信息',
                   onTap: () {
-                    // TODO: 跳转到钱包详情页面
+                    _showPointsDetailDialog();
                   },
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
@@ -418,6 +559,71 @@ class _ProfilePageState extends State<ProfilePage> {
       Icons.person,
       size: 40,
       color: Color(0xFF6B73FF),
+    );
+  }
+
+  // 积分卡片（带刷新功能）
+  Widget _buildPointsCard() {
+    return GestureDetector(
+      onTap: _loadPointsBalance,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.star,
+                  size: 24,
+                  color: Colors.orange,
+                ),
+                if (_isLoadingPoints)
+                  Positioned(
+                    right: -8,
+                    top: -8,
+                    child: SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _pointsBalance?.pointsBalance ?? '0',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '积分',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -518,4 +724,4 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-} 
+}
