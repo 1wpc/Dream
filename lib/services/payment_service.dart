@@ -57,8 +57,19 @@ class PaymentService {
       return await _handlePaymentResult(Map<String, dynamic>.from(result), credits);
     } catch (e) {
       print('支付失败: $e');
+      String userMessage = '支付失败，请稍后重试';
+      
+      // 根据错误类型提供更友好的提示
+      if (e.toString().contains('积分不足')) {
+        userMessage = '积分不足，请先充值';
+      } else if (e.toString().contains('网络')) {
+        userMessage = '网络连接失败，请检查网络后重试';
+      } else if (e.toString().contains('订单')) {
+        userMessage = '订单创建失败，请重试';
+      }
+      
       Fluttertoast.showToast(
-        msg: '支付失败: $e',
+        msg: userMessage,
         gravity: ToastGravity.CENTER,
       );
       return null;
@@ -87,6 +98,23 @@ class PaymentService {
       }
     } catch (e) {
       print('创建支付订单失败: $e');
+      
+      // 提供用户友好的错误提示
+      String userMessage = '订单创建失败';
+      if (e.toString().contains('401')) {
+        userMessage = '登录已过期，请重新登录';
+      } else if (e.toString().contains('403')) {
+        userMessage = '权限不足';
+      } else if (e.toString().contains('积分不足')) {
+        userMessage = '积分不足';
+      } else if (e.toString().contains('网络')) {
+        userMessage = '网络连接失败';
+      }
+      
+      Fluttertoast.showToast(
+        msg: userMessage,
+        gravity: ToastGravity.CENTER,
+      );
       return null;
     }
   }
@@ -181,7 +209,7 @@ class PaymentService {
       print('处理支付结果失败: $e');
       return {
         'success': false,
-        'message': '处理支付结果失败: $e',
+        'message': '支付结果处理失败',
       };
     }
   }

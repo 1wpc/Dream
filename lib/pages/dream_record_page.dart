@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import 'package:intl/intl.dart';
 import 'add_dream_page.dart';
-import 'dream_detail_page_enhanced.dart';
+import 'dream_detail_page.dart';
 import 'edit_dream_page.dart';
 import 'dart:io';
 
@@ -183,7 +183,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DreamDetailPageEnhanced(
+                        builder: (context) => DreamDetailPage(
                           dream: dream,
                         ),
                       ),
@@ -303,7 +303,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                                           final result = await Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) => DreamDetailPageEnhanced(
+                                              builder: (context) => DreamDetailPage(
                                                 dream: dream,
                                               ),
                                             ),

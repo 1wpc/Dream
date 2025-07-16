@@ -5,6 +5,7 @@ import '../services/deepseek_service.dart';
 import '../services/jimeng_service.dart';
 import 'dream_style_selection_page.dart';
 import 'dart:async';
+import 'dart:convert';
 
 // 加载期间显示的名言列表
 const List<String> _quotes = [
@@ -158,6 +159,30 @@ class _DaydreamPageState extends State<DaydreamPage> {
     super.dispose();
   }
 
+  // 解析流式响应的JSON
+  Map<String, dynamic> _parseStreamResponse(String response) {
+    try {
+      // 尝试直接解析JSON
+      return jsonDecode(response) as Map<String, dynamic>;
+    } catch (e) {
+      // 如果直接解析失败，尝试提取JSON部分
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(response);
+      if (jsonMatch != null) {
+        try {
+          return jsonDecode(jsonMatch.group(0)!) as Map<String, dynamic>;
+        } catch (_) {}
+      }
+      
+      // 如果仍然失败，返回默认结构
+      debugPrint('JSON解析失败，使用默认数据: $response');
+      return {
+        'prompts': ['A mystical dream landscape with ethereal lighting'],
+        'explanations': ['梦境如诗，意境深远'],
+        'englishDescriptions': ['Mystical dream realm'],
+      };
+    }
+  }
+
   // 初始化梦境
   Future<void> _initializeDream() async {
     setState(() {
@@ -166,9 +191,15 @@ class _DaydreamPageState extends State<DaydreamPage> {
 
     try {
       // 调用 DeepSeek API 生成梦境剧本，传递风格关键词
-      final result = await DeepSeekService.generateDreamScript(
+      String fullResponse = '';
+      await for (final chunk in DeepSeekService.generateDreamScript(
         styleKeywords: widget.dreamStyle?.keywords,
-      );
+      )) {
+        fullResponse += chunk;
+      }
+      
+      // 解析JSON响应
+      final result = _parseStreamResponse(fullResponse);
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
       final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();
@@ -216,9 +247,15 @@ class _DaydreamPageState extends State<DaydreamPage> {
 
     try {
       // 调用 DeepSeek API 生成新的场景描述，传递风格关键词
-      final result = await DeepSeekService.generateDreamScene(
+      String fullResponse = '';
+      await for (final chunk in DeepSeekService.generateDreamScene(
         styleKeywords: widget.dreamStyle?.keywords,
-      );
+      )) {
+        fullResponse += chunk;
+      }
+      
+      // 解析JSON响应
+      final result = _parseStreamResponse(fullResponse);
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
       final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();

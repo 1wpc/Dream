@@ -7,39 +7,103 @@ class DeepSeekService {
   // 后端统一 Chat Completions 路径
   static const String _chatPath = '/api/v1/chat/completions';
 
-  // 生成梦境场景描述
-  static Future<Map<String, List<String>>> generateDreamScene({String? styleKeywords}) async {
+  // 生成梦境场景描述 - 流式输出版本
+  static Stream<String> generateDreamSceneStream({String? styleKeywords}) async* {
+    final dio = ApiService.dio;
     try {
-      final dio = ApiService.dio;
-      final response = await dio.post(
+      final response = await dio.post<ResponseBody>(
         _chatPath,
-        data: _buildDreamScenePayload(styleKeywords),
+        data: _buildDreamScenePayload(styleKeywords, stream: true),
+        options: Options(responseType: ResponseType.stream),
       );
 
       if (response.statusCode == 200) {
-        return _parseDreamResult(response.data);
+        final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
+        await for (final chunk in stream) {
+          // 直接yield每个字符块，保留所有字符包括换行符
+          if (chunk.isNotEmpty) {
+            yield chunk;
+          }
+        }
+      } else {
+        throw Exception('API请求失败: ${response.statusCode}');
       }
-      throw Exception('API请求失败: ${response.statusCode}');
     } catch (e) {
       throw Exception('生成梦境场景失败: $e');
     }
   }
 
-  // 生成梦境剧本
-  static Future<Map<String, List<String>>> generateDreamScript({String? styleKeywords}) async {
+  // 生成梦境剧本 - 流式输出版本
+  static Stream<String> generateDreamScriptStream({String? styleKeywords}) async* {
+    final dio = ApiService.dio;
     try {
-      final dio = ApiService.dio;
-      final response = await dio.post(
+      final response = await dio.post<ResponseBody>(
         _chatPath,
-        data: _buildDreamScriptPayload(styleKeywords),
+        data: _buildDreamScriptPayload(styleKeywords, stream: true),
+        options: Options(responseType: ResponseType.stream),
       );
+
       if (response.statusCode == 200) {
-        return _parseDreamResult(response.data);
+        final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
+        String buffer = '';
+        await for (final chunk in stream) {
+          print('[DeepSeek] 收到数据块: $chunk');
+          buffer += chunk;
+          final lines = buffer.split('\n');
+          buffer = lines.removeLast();
+          for (final line in lines) {
+            print('[DeepSeek] 处理行: $line');
+            if (line.trim().isEmpty) continue;
+            
+            // 处理标准SSE格式
+            if (line.startsWith('data: ')) {
+              final dataStr = line.substring(6).trim();
+              if (dataStr == '[DONE]') return;
+              try {
+                final data = jsonDecode(dataStr);
+                final delta = data['choices']?[0]?['delta'];
+                final content = delta?['content'];
+                if (content != null && content is String && content.isNotEmpty) {
+                  yield content;
+                }
+              } catch (_) {
+                continue;
+              }
+            }
+            // 处理直接JSON格式（后端可能直接返回JSON而不是SSE格式）
+            else if (line.startsWith('{')) {
+              try {
+                final data = jsonDecode(line);
+                final delta = data['choices']?[0]?['delta'];
+                final content = delta?['content'];
+                if (content != null && content is String && content.isNotEmpty) {
+                  yield content;
+                }
+                // 检查是否完成
+                final finishReason = data['choices']?[0]?['finish_reason'];
+                if (finishReason != null) return;
+              } catch (_) {
+                continue;
+              }
+            }
+          }
+        }
+      } else {
+        throw Exception('API请求失败: ${response.statusCode}');
       }
-      throw Exception('API请求失败: ${response.statusCode}');
     } catch (e) {
       throw Exception('生成梦境剧本失败: $e');
     }
+  }
+
+  // 生成梦境场景描述 - 统一使用流式输出
+  static Stream<String> generateDreamScene({String? styleKeywords}) {
+    return generateDreamSceneStream(styleKeywords: styleKeywords);
+  }
+
+  // 生成梦境剧本 - 统一使用流式输出
+  static Stream<String> generateDreamScript({String? styleKeywords}) {
+    return generateDreamScriptStream(styleKeywords: styleKeywords);
   }
 
   // AI解梦功能 - 流式输出版本
@@ -54,26 +118,10 @@ class DeepSeekService {
 
       if (response.statusCode == 200) {
         final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-        String buffer = '';
         await for (final chunk in stream) {
-          buffer += chunk;
-          final lines = buffer.split('\n');
-          buffer = lines.removeLast();
-          for (final line in lines) {
-            if (line.trim().isEmpty) continue;
-            if (!line.startsWith('data: ')) continue;
-            final dataStr = line.substring(6).trim();
-            if (dataStr == '[DONE]') return;
-            try {
-              final data = jsonDecode(dataStr);
-              final delta = data['choices']?[0]?['delta'];
-              final content = delta?['content'];
-              if (content != null && content is String && content.isNotEmpty) {
-                yield content;
-              }
-            } catch (_) {
-              continue;
-            }
+          // 直接yield每个字符块，因为后端返回的是逐字符流式数据
+          if (chunk.isNotEmpty) {
+            yield chunk;
           }
         }
       } else {
@@ -84,26 +132,14 @@ class DeepSeekService {
     }
   }
 
-  // AI解梦功能 - 完整版本
-  static Future<String> interpretDream(String dreamTitle, String dreamContent) async {
-    try {
-      final dio = ApiService.dio;
-      final response = await dio.post(
-        _chatPath,
-        data: _buildInterpretDreamPayload(dreamTitle, dreamContent, stream: false),
-      );
-      if (response.statusCode == 200) {
-        return response.data['choices'][0]['message']['content'] as String;
-      }
-      throw Exception('API请求失败: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('AI解梦失败: $e');
-    }
+  // AI解梦功能 - 流式输出版本（统一使用流式）
+  static Stream<String> interpretDream(String dreamTitle, String dreamContent) {
+    return interpretDreamStream(dreamTitle, dreamContent);
   }
 
   // ----------------- 私有辅助方法 -----------------
 
-  static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords) {
+  static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords, {required bool stream}) {
     final stylePrompt = styleKeywords != null
         ? '请特别注意生成${styleKeywords}风格的梦境场景。'
         : '';
@@ -122,11 +158,11 @@ class DeepSeekService {
               : '请为我生成一个梦幻场景的提示词和诗意解释。',
         }
       ],
-      'stream': false,
+      'stream': stream,
     };
   }
 
-  static Map<String, dynamic> _buildDreamScriptPayload(String? styleKeywords) {
+  static Map<String, dynamic> _buildDreamScriptPayload(String? styleKeywords, {required bool stream}) {
     final stylePrompt = styleKeywords != null
         ? '请特别注意生成${styleKeywords}风格的梦境场景。'
         : '';
@@ -145,7 +181,7 @@ class DeepSeekService {
               : '请为我创作一个完整的梦境剧本。',
         }
       ],
-      'stream': false,
+      'stream': stream,
     };
   }
 
@@ -170,15 +206,7 @@ class DeepSeekService {
     };
   }
 
-  static Map<String, List<String>> _parseDreamResult(dynamic data) {
-    final content = data['choices'][0]['message']['content'];
-    final result = jsonDecode(content) as Map<String, dynamic>;
-    return {
-      'prompts': (result['prompts'] as List).cast<String>(),
-      'explanations': (result['explanations'] as List).cast<String>(),
-      'englishDescriptions': (result['englishDescriptions'] as List).cast<String>(),
-    };
-  }
+
 
   // ----------------- Prompt 模板 -----------------
 
@@ -301,4 +329,4 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 - 避免过于深奥的术语
 - 字数控制在300-500字之间
 - 富有共情力和治愈性''';
-} 
+}
