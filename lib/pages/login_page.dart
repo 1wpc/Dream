@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:form_validator/form_validator.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../models/dream_models.dart';
 import 'main_container_page.dart';
 
 class LoginPage extends StatefulWidget {

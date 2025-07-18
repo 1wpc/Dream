@@ -12,7 +12,12 @@ class JimengService {
       final dio = ApiService.dio;
       final response = await dio.post(
         _imagePath,
-        data: {'prompt': prompt},
+        data: {
+          'prompt': prompt,
+          'use_sr': true,
+          'width': 443,
+          'height': 591,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -41,8 +46,10 @@ class JimengService {
         imageUrls.add(imageUrl);
       } catch (e) {
         debugPrint('生成图片失败: $e');
+        // 添加占位符URL，确保返回的数量与prompts一致
+        imageUrls.add('https://via.placeholder.com/512x512/cccccc/666666?text=生成失败');
       }
     }
     return imageUrls;
   }
-} 
+}

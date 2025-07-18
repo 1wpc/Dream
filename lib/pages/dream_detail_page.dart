@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../services/deepseek_service.dart';
-import '../services/dream_api_service.dart';
 import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
@@ -24,8 +23,6 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
   double _pullOffset = 0.0; // 下拉偏移量
   double _scrollOffset = 0.0; // 滚动偏移量
   final DatabaseService _databaseService = DatabaseService();
-  final DeepSeekService _deepSeekService = DeepSeekService();
-  final DreamApiService _dreamApiService = DreamApiService();
   
   // 缓存背景组件
   Widget? _cachedBackgroundWidget;
@@ -293,14 +290,16 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
   Widget _buildBackgroundImage() {
     if (!_imageExists) {
       return Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.blue.shade900,
-              Colors.purple.shade900,
+              Color(0xFF667eea),
+              Color(0xFF764ba2),
+              Color(0xFFf093fb),
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: const Center(
@@ -320,14 +319,16 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       cacheHeight: null,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.blue.shade900,
-                Colors.purple.shade900,
+                Color(0xFF667eea),
+                Color(0xFF764ba2),
+                Color(0xFFf093fb),
               ],
+              stops: [0.0, 0.5, 1.0],
             ),
           ),
           child: const Center(
@@ -357,7 +358,6 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
     
     // 内容透明度和位移
     final contentOpacity = (1 - pullProgress * 1.2).clamp(0.0, 1.0);
-    final contentTranslateY = pullProgress * 100;
     
     // 导航栏效果
     final appBarOpacity = scrollProgress > 0.3 ? 0.9 : 0.0;
@@ -372,14 +372,16 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
             // 背景图片
             Positioned.fill(
               child: _cachedBackgroundWidget ?? Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.blue.shade900,
-                      Colors.purple.shade900,
+                      Color(0xFF667eea),
+                      Color(0xFF764ba2),
+                      Color(0xFFf093fb),
                     ],
+                    stops: [0.0, 0.5, 1.0],
                   ),
                 ),
                 child: const Center(
@@ -427,8 +429,19 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
-                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.black.withOpacity(0.3),
+                                    Colors.black.withOpacity(0.1),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,12 +491,19 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                         margin: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                              spreadRadius: 0,
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                              spreadRadius: 0,
                             ),
                           ],
                         ),
@@ -530,12 +550,26 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFFF8F9FA),
+                                          const Color(0xFFF1F3F4),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(18),
                                       border: Border.all(
-                                        color: Colors.grey.shade200,
+                                        color: const Color(0xFFE8EAED),
                                         width: 1,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.02),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                     child: Text(
                                       widget.dream.content,
@@ -571,24 +605,33 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                               size: 20,
                                             ),
                                         label: Text(
-                                          _isInterpreting ? '解梦中...' : 'AI解梦',
+                                          _isInterpreting ? '解梦中...' : 'AI解梦（消耗1积分）',
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue.shade600,
+                                          backgroundColor: const Color(0xFF667eea),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 32,
-                                            vertical: 16,
+                                            vertical: 18,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(25),
+                                            borderRadius: BorderRadius.circular(30),
                                           ),
-                                          elevation: 4,
-                                          shadowColor: Colors.blue.withOpacity(0.3),
+                                          elevation: 0,
+                                          shadowColor: Colors.transparent,
+                                        ).copyWith(
+                                          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                            (Set<MaterialState> states) {
+                                              if (states.contains(MaterialState.pressed)) {
+                                                return const Color(0xFF5a67d8);
+                                              }
+                                              return const Color(0xFF667eea);
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -603,17 +646,24 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
-                                            Colors.purple.shade50,
-                                            Colors.blue.shade50,
+                                            const Color(0xFFF3F4F6),
+                                            const Color(0xFFE5E7EB),
                                           ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(22),
                                         border: Border.all(
-                                          color: Colors.purple.shade200,
+                                          color: const Color(0xFFD1D5DB),
                                           width: 1,
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.03),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,12 +673,12 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                               Container(
                                                 padding: const EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.purple.shade100,
+                                                  color: const Color(0xFF667eea).withOpacity(0.1),
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Icon(
                                                   Icons.auto_awesome,
-                                                  color: Colors.purple.shade700,
+                                                  color: const Color(0xFF667eea),
                                                   size: 20,
                                                 ),
                                               ),
@@ -638,7 +688,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                 style: TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF1A237E),
+                                                  color: Color(0xFF374151),
                                                 ),
                                               ),
                                               if (_isInterpreting) ...[
@@ -649,7 +699,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                                      Colors.purple.shade600,
+                                                      const Color(0xFF667eea),
                                                     ),
                                                   ),
                                                 ),
@@ -674,14 +724,14 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                   Container(
                                                     width: 2,
                                                     height: 16,
-                                                    color: Colors.purple.shade600,
+                                                    color: const Color(0xFF667eea),
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
                                                     '正在解析...',
                                                     style: TextStyle(
                                                       fontSize: 12,
-                                                      color: Colors.purple.shade600,
+                                                      color: const Color(0xFF667eea),
                                                       fontStyle: FontStyle.italic,
                                                     ),
                                                   ),
@@ -853,8 +903,16 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: Colors.white.withOpacity(0.98),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -8),
+              spreadRadius: 0,
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -891,24 +949,69 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                   ),
                   SizedBox(height: 16),
                   // 快速分享选项
-                  ListTile(
-                    leading: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.flash_on,
-                        color: Colors.blue.shade600,
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 1,
                       ),
                     ),
-                    title: Text('快速分享'),
-                    subtitle: Text('自动识别分类和标签，匿名发布'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _quickShare();
-                    },
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      leading: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.shade400,
+                              Colors.blue.shade600,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.flash_on,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        '快速分享',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '自动识别分类和标签，匿名发布',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey.shade400,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _quickShare();
+                      },
+                    ),
                   ),
                   SizedBox(height: 16),
                 ],
@@ -921,70 +1024,6 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
   }
 
   // 分享梦境到社区  
-  Future<void> _shareToCommunity() async {
-    setState(() {
-      _isSharing = true;
-    });
-
-    try {
-      final sharedPost = await DreamApiService.quickShareDream(
-        dreamRecord: widget.dream,
-        authorNickname: '匿名梦想家',
-      );
-
-      setState(() {
-        _isSharing = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text('梦境已成功分享到一起做梦社区！'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: '查看',
-              textColor: Colors.white,
-              onPressed: () {
-                // TODO: 导航到论坛页面
-              },
-            ),
-          ),
-        );
-        HapticFeedback.lightImpact();
-      }
-    } catch (e) {
-      setState(() {
-        _isSharing = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text('分享失败：${e.toString().replaceAll('Exception: ', '')}'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
 
   // 快速分享梦境
   Future<void> _quickShare() async {
@@ -993,10 +1032,6 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
     });
 
     try {
-      final sharedPost = await DreamApiService.quickShareDream(
-        dreamRecord: widget.dream,
-        authorNickname: '匿名梦想家',
-      );
 
       setState(() {
         _isSharing = false;
@@ -1034,4 +1069,4 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       }
     }
   }
-} 
+}

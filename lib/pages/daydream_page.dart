@@ -161,24 +161,74 @@ class _DaydreamPageState extends State<DaydreamPage> {
 
   // 解析流式响应的JSON
   Map<String, dynamic> _parseStreamResponse(String response) {
+    debugPrint('开始解析响应，长度: ${response.length}');
+    debugPrint('响应前100字符: ${response.length > 100 ? response.substring(0, 100) : response}');
+    
     try {
       // 尝试直接解析JSON
-      return jsonDecode(response) as Map<String, dynamic>;
+      final result = jsonDecode(response) as Map<String, dynamic>;
+      debugPrint('直接JSON解析成功');
+      return result;
     } catch (e) {
-      // 如果直接解析失败，尝试提取JSON部分
-      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(response);
-      if (jsonMatch != null) {
+      debugPrint('直接JSON解析失败: $e');
+      
+      try {
+        // 清理响应文本，移除可能的控制字符和多余空白
+        String cleanResponse = response
+            .replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '') // 移除控制字符
+            .trim();
+        
+        debugPrint('清理后的响应: $cleanResponse');
+        
+        // 尝试解析清理后的JSON
+        final result = jsonDecode(cleanResponse) as Map<String, dynamic>;
+        debugPrint('清理后JSON解析成功');
+        return result;
+      } catch (e2) {
+        debugPrint('清理后JSON解析失败: $e2');
+        
         try {
-          return jsonDecode(jsonMatch.group(0)!) as Map<String, dynamic>;
-        } catch (_) {}
+          // 尝试提取JSON部分（更宽松的方式）
+          final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(response);
+          if (jsonMatch != null) {
+            final jsonStr = jsonMatch.group(0)!;
+            debugPrint('提取到的JSON: $jsonStr');
+            final result = jsonDecode(jsonStr) as Map<String, dynamic>;
+            debugPrint('提取JSON解析成功');
+            return result;
+          }
+        } catch (e3) {
+          debugPrint('提取JSON解析失败: $e3');
+        }
+        
+        // 尝试更宽松的JSON提取
+        final lines = response.split('\n');
+        for (final line in lines) {
+          if (line.trim().startsWith('{')) {
+            try {
+              final result = jsonDecode(line.trim()) as Map<String, dynamic>;
+              debugPrint('逐行JSON解析成功');
+              return result;
+            } catch (_) {}
+          }
+        }
       }
       
-      // 如果仍然失败，返回默认结构
-      debugPrint('JSON解析失败，使用默认数据: $response');
+      // 如果仍然失败，返回默认结构（包含多个场景）
+      debugPrint('所有解析方法都失败，使用默认数据: $response');
       return {
-        'prompts': ['A mystical dream landscape with ethereal lighting'],
-        'explanations': ['梦境如诗，意境深远'],
-        'englishDescriptions': ['Mystical dream realm'],
+        'prompts': [
+          'A mystical dream landscape with ethereal lighting, floating islands, aurora borealis, fantasy realm',
+          'Enchanted forest with glowing mushrooms, fairy lights, misty atmosphere, magical creatures',
+          'Celestial garden with crystal flowers, starlight streams, cosmic butterflies, dreamy ambiance',
+          'Ancient temple in clouds, golden light rays, floating petals, serene meditation space'
+        ],
+        'explanations': [
+          '梦境如诗，意境深远',
+          '森林幽深，光影斑驳',
+          '星河璀璨，花开彼岸',
+          '古刹钟声，禅意悠然'
+        ],
       };
     }
   }
@@ -198,11 +248,12 @@ class _DaydreamPageState extends State<DaydreamPage> {
         fullResponse += chunk;
       }
       
+      debugPrint('DeepSeek完整响应: $fullResponse');
+      
       // 解析JSON响应
       final result = _parseStreamResponse(fullResponse);
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
-      final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();
       
       // 调用即梦AI生成图片
       final imageUrls = await JimengService.generateImages(prompts);
@@ -215,7 +266,6 @@ class _DaydreamPageState extends State<DaydreamPage> {
               imageUrl: imageUrls[i],
               prompt: prompts[i],
               description: explanations[i],
-              englishDescription: englishDescriptions[i],
             ),
           );
         }
@@ -254,11 +304,12 @@ class _DaydreamPageState extends State<DaydreamPage> {
         fullResponse += chunk;
       }
       
+      debugPrint('DeepSeek场景响应: $fullResponse');
+      
       // 解析JSON响应
       final result = _parseStreamResponse(fullResponse);
       final prompts = (result['prompts'] as List).cast<String>();
       final explanations = (result['explanations'] as List).cast<String>();
-      final englishDescriptions = (result['englishDescriptions'] as List).cast<String>();
       
       // 调用即梦AI生成图片
       final imageUrls = await JimengService.generateImages(prompts);
@@ -270,7 +321,6 @@ class _DaydreamPageState extends State<DaydreamPage> {
               imageUrl: imageUrls[i],
               prompt: prompts[i],
               description: explanations[i],
-              englishDescription: englishDescriptions[i],
             ),
           );
         }
@@ -430,43 +480,33 @@ class _DaydreamPageState extends State<DaydreamPage> {
           // 场景描述
           if (!_isLoading && _scenes.isNotEmpty)
             Positioned(
-              bottom: 50,
+              bottom: 140, // 调整位置，避免与页数指示器重叠
               left: 20,
               right: 20,
               child: SafeArea(
                 child: Container(
                   constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.3,
+                    maxHeight: MediaQuery.of(context).size.height * 0.35, // 增加最大高度
                   ),
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16), // 减少内边距以节省空间
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withOpacity(0.6), // 增加透明度
                     borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
                   child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _scenes[_currentSceneIndex].description,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          _scenes[_currentSceneIndex].englishDescription,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    child: Text(
+                      _scenes[_currentSceneIndex].description,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18, // 增大字体，因为只显示中文
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -536,47 +576,34 @@ class _DaydreamPageState extends State<DaydreamPage> {
           // 场景指示器
           if (!_isLoading && _scenes.isNotEmpty && _scenes.length > 1)
             Positioned(
-              bottom: 100,
+              bottom: 90, // 调整位置，避免与按钮重叠
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_currentSceneIndex + 1} / ${_scenes.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
                     ),
-                  ),
-                ),
-              ),
-            ),
-          
-          // 场景指示器
-          if (!_isLoading && _scenes.isNotEmpty && _scenes.length > 1)
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     '${_currentSceneIndex + 1} / ${_scenes.length}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -589,7 +616,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
             if (_currentSceneIndex > 0)
               Positioned(
                 left: 20,
-                bottom: 30,
+                bottom: 20, // 调整位置，避免与页数指示器重叠
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
@@ -622,7 +649,7 @@ class _DaydreamPageState extends State<DaydreamPage> {
             // 右箭头 - 下一个场景
             Positioned(
               right: 20,
-              bottom: 30,
+              bottom: 20, // 调整位置，避免与页数指示器重叠
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
@@ -668,12 +695,10 @@ class DreamScene {
   final String imageUrl;
   final String prompt;
   final String description;
-  final String englishDescription; // 新增英文描述字段
 
   DreamScene({
     required this.imageUrl,
     required this.prompt,
     required this.description,
-    required this.englishDescription,
   });
 }

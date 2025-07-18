@@ -3,7 +3,6 @@ import '../services/database_service.dart';
 import 'package:intl/intl.dart';
 import 'add_dream_page.dart';
 import 'dream_detail_page.dart';
-import 'edit_dream_page.dart';
 import 'dart:io';
 
 class DreamRecordPage extends StatefulWidget {

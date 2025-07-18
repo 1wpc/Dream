@@ -18,7 +18,6 @@ class _DreamForumPageState extends State<DreamForumPage>
   final TextEditingController _searchController = TextEditingController();
   
   int _selectedCategoryIndex = 0;
-  bool _isSearchExpanded = false;
   bool _isLoading = true;
   bool _isSearching = false;
   String? _errorMessage;

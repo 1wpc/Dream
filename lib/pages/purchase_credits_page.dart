@@ -68,16 +68,24 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    ...creditPackages.map((package) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildCreditOption(
-                        context,
-                        package['title'],
-                        package['subtitle'],
-                        package['credits'],
-                        package['price'],
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: creditPackages.length,
+                        itemBuilder: (context, index) {
+                          final package = creditPackages[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildCreditOption(
+                              context,
+                              package['title'],
+                              package['subtitle'],
+                              package['credits'],
+                              package['price'],
+                            ),
+                          );
+                        },
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),
@@ -188,7 +196,15 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('=== 购买积分页面支付错误详细信息 ===');
+      print('错误类型: ${e.runtimeType}');
+      print('错误消息: $e');
+      print('堆栈跟踪: $stackTrace');
+      print('积分数量: $credits');
+      print('支付金额: $price');
+      print('===================================');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -1,7 +1,5 @@
 import 'package:tobias/tobias.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:dream/services/api_service.dart';
 
 class PaymentService {
@@ -19,8 +17,12 @@ class PaymentService {
   Future<bool> isAlipayInstalled() async {
     try {
       return await _tobias.isAliPayInstalled;
-    } catch (e) {
-      print('检查支付宝安装状态失败: $e');
+    } catch (e, stackTrace) {
+      print('=== 检查支付宝安装状态失败详细信息 ===');
+      print('错误类型: ${e.runtimeType}');
+      print('错误消息: $e');
+      print('堆栈跟踪: $stackTrace');
+      print('=====================================');
       return false;
     }
   }
@@ -55,8 +57,13 @@ class PaymentService {
       
       // 处理支付结果
       return await _handlePaymentResult(Map<String, dynamic>.from(result), credits);
-    } catch (e) {
-      print('支付失败: $e');
+    } catch (e, stackTrace) {
+      print('=== 支付失败详细信息 ===');
+      print('错误类型: ${e.runtimeType}');
+      print('错误消息: $e');
+      print('堆栈跟踪: $stackTrace');
+      print('========================');
+      
       String userMessage = '支付失败，请稍后重试';
       
       // 根据错误类型提供更友好的提示
@@ -96,8 +103,12 @@ class PaymentService {
       } else {
         throw Exception('创建支付订单失败: ${response.statusCode}');
       }
-    } catch (e) {
-      print('创建支付订单失败: $e');
+    } catch (e, stackTrace) {
+      print('=== 创建支付订单失败详细信息 ===');
+      print('错误类型: ${e.runtimeType}');
+      print('错误消息: $e');
+      print('堆栈跟踪: $stackTrace');
+      print('==============================');
       
       // 提供用户友好的错误提示
       String userMessage = '订单创建失败';
@@ -127,7 +138,6 @@ class PaymentService {
     try {
       final resultStatus = result['resultStatus'];
       final memo = result['memo'] ?? '';
-      final resultString = result['result'] ?? '';
 
       switch (resultStatus) {
         case '9000': // 支付成功
@@ -205,8 +215,13 @@ class PaymentService {
             'message': '未知支付结果: $memo',
           };
       }
-    } catch (e) {
-      print('处理支付结果失败: $e');
+    } catch (e, stackTrace) {
+      print('=== 处理支付结果失败详细信息 ===');
+      print('错误类型: ${e.runtimeType}');
+      print('错误消息: $e');
+      print('堆栈跟踪: $stackTrace');
+      print('支付结果原始数据: $result');
+      print('==============================');
       return {
         'success': false,
         'message': '支付结果处理失败',
@@ -225,6 +240,13 @@ class PaymentService {
   /// 获取积分套餐列表
   List<Map<String, dynamic>> getCreditPackages() {
     return [
+      {
+        'credits': 10,
+        'price': 1.00,
+        'title': '10 积分',
+        'subtitle': '¥ 1.00',
+        'discount': '',
+      },
       {
         'credits': 100,
         'price': 10.00,

@@ -20,7 +20,7 @@ class DeepSeekService {
       if (response.statusCode == 200) {
         final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
         await for (final chunk in stream) {
-          // 直接yield每个字符块，保留所有字符包括换行符
+          // 直接yield每个字符块，因为后端返回的是逐字符流式数据
           if (chunk.isNotEmpty) {
             yield chunk;
           }
@@ -45,47 +45,10 @@ class DeepSeekService {
 
       if (response.statusCode == 200) {
         final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
-        String buffer = '';
         await for (final chunk in stream) {
-          print('[DeepSeek] 收到数据块: $chunk');
-          buffer += chunk;
-          final lines = buffer.split('\n');
-          buffer = lines.removeLast();
-          for (final line in lines) {
-            print('[DeepSeek] 处理行: $line');
-            if (line.trim().isEmpty) continue;
-            
-            // 处理标准SSE格式
-            if (line.startsWith('data: ')) {
-              final dataStr = line.substring(6).trim();
-              if (dataStr == '[DONE]') return;
-              try {
-                final data = jsonDecode(dataStr);
-                final delta = data['choices']?[0]?['delta'];
-                final content = delta?['content'];
-                if (content != null && content is String && content.isNotEmpty) {
-                  yield content;
-                }
-              } catch (_) {
-                continue;
-              }
-            }
-            // 处理直接JSON格式（后端可能直接返回JSON而不是SSE格式）
-            else if (line.startsWith('{')) {
-              try {
-                final data = jsonDecode(line);
-                final delta = data['choices']?[0]?['delta'];
-                final content = delta?['content'];
-                if (content != null && content is String && content.isNotEmpty) {
-                  yield content;
-                }
-                // 检查是否完成
-                final finishReason = data['choices']?[0]?['finish_reason'];
-                if (finishReason != null) return;
-              } catch (_) {
-                continue;
-              }
-            }
+          // 直接yield每个字符块，保留所有字符包括换行符
+          if (chunk.isNotEmpty) {
+            yield chunk;
           }
         }
       } else {
@@ -154,8 +117,8 @@ class DeepSeekService {
         {
           'role': 'user',
           'content': styleKeywords != null
-              ? '请为我生成一个${styleKeywords}风格的梦幻场景。'
-              : '请为我生成一个梦幻场景的提示词和诗意解释。',
+              ? '请为我生成3-5个${styleKeywords}风格的梦幻场景。'
+              : '请为我生成3-5个梦幻场景的提示词和诗意解释。',
         }
       ],
       'stream': stream,
@@ -217,8 +180,7 @@ $stylePrompt
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", ...],
-  "explanations": ["场景1的诗意解释", "场景2的诗意解释", ...],
-  "englishDescriptions": ["场景1的英文描述", "场景2的英文描述", ...]
+  "explanations": ["场景1的诗意解释", "场景2的诗意解释", ...]
 }
 
 提示词要求：
@@ -238,14 +200,8 @@ ${styleKeywords != null ? '6. 必须体现$styleKeywords的风格特征' : ''}
 诗意解释要求：
 1. 用中文描述
 2. 简短优美，富有诗意
-3. 长度控制在20字以内
-4. 要含蓄且富有意境
-
-英文描述要求：
-1. 用英文描述
-2. 简洁优雅，富有意境
-3. 长度控制在10个单词以内
-4. 要呼应中文的诗意''';
+3. 长度控制在30字以内
+4. 要含蓄且富有意境''';
 
   static String _dreamScriptSystemPrompt(String stylePrompt, String? styleKeywords) =>
       '''你是一个富有想象力的梦境编织者，需要创作一个完整的梦境故事，包含多个场景的提示词和诗意解释。
@@ -254,8 +210,7 @@ $stylePrompt
 请严格按照以下JSON格式输出，不要有任何其他文字：
 {
   "prompts": ["场景1的提示词", "场景2的提示词", "场景3的提示词", ...],
-  "explanations": ["场景1的诗意解释", "场景2的诗意解释", "场景3的诗意解释", ...],
-  "englishDescriptions": ["场景1的英文描述", "场景2的英文描述", "场景3的英文描述", ...]
+  "explanations": ["场景1的诗意解释", "场景2的诗意解释", "场景3的诗意解释", ...]
 }
 
 提示词要求：
@@ -276,17 +231,10 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 诗意解释要求：
 1. 用中文描述
 2. 优美流畅，富有诗意
-3. 长度控制在30字以内
+3. 长度控制在40字以内
 4. 要含蓄且富有意境
 5. 解释之间要有情感上的联系，形成一个完整的故事
-6. 可以包含一些哲理性的思考
-
-英文描述要求：
-1. 用英文描述
-2. 简洁优雅，富有意境
-3. 长度控制在10个单词以内
-4. 要呼应中文的诗意
-5. 描述之间要有连贯性''';
+6. 可以包含一些哲理性的思考''';
 
   static String _interpretDreamSystemPrompt() =>
       '''你是一位经验丰富的心理学家和梦境解析师，擅长从心理学角度分析梦境的深层含义。
