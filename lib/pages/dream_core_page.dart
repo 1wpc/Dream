@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'dream_style_selection_page.dart';
 import 'dream_record_page.dart';
 import 'zhougong_dream_page.dart';
-import 'dream_forum_page.dart';
+import 'meditation_page.dart';
+
 import 'dart:math' as math;
 
 class DreamCorePage extends StatefulWidget {
@@ -43,12 +44,13 @@ class _DreamCorePageState extends State<DreamCorePage>
       page: () => const ZhougongDreamPage(),
     ),
     FeatureItem(
-      title: '一起做梦',
-      subtitle: '梦境分享论坛',
-      icon: Icons.groups,
-      gradient: [Color(0xFF833ab4), Color(0xFFfd1d1d), Color(0xFFfcb045)],
-      page: () => const DreamForumPage(), // 梦境分享论坛
+      title: '冥想',
+      subtitle: '静心养神',
+      icon: Icons.self_improvement,
+      gradient: [Color(0xFF667eea), Color(0xFF764ba2)],
+      page: () => const MeditationPage(),
     ),
+
   ];
 
   @override

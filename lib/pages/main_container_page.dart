@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dream_core_page.dart';
+import 'inspiration_page.dart';
 import 'profile_page.dart';
 
 class MainContainerPage extends StatefulWidget {
@@ -15,6 +16,7 @@ class _MainContainerPageState extends State<MainContainerPage> {
 
   final List<Widget> _pages = [
     const DreamCorePage(),
+    const InspirationPage(),
     const ProfilePage(),
   ];
 
@@ -23,6 +25,11 @@ class _MainContainerPageState extends State<MainContainerPage> {
       icon: Icon(Icons.home_outlined),
       activeIcon: Icon(Icons.home),
       label: '主页',
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.lightbulb_outline),
+      activeIcon: Icon(Icons.lightbulb),
+      label: '灵感',
     ),
     const BottomNavigationBarItem(
       icon: Icon(Icons.person_outline),
@@ -60,6 +67,7 @@ class _MainContainerPageState extends State<MainContainerPage> {
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
+        physics: const NeverScrollableScrollPhysics(), // 禁用滑动手势
         children: _pages,
       ),
       bottomNavigationBar: Container(
@@ -173,4 +181,4 @@ class CustomBottomNavItem extends StatelessWidget {
       ),
     );
   }
-} 
+}

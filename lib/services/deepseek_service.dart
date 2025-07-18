@@ -100,6 +100,37 @@ class DeepSeekService {
     return interpretDreamStream(dreamTitle, dreamContent);
   }
 
+  // 生成灵感建议 - 流式输出版本
+  static Stream<String> generateInspirationStream() async* {
+    final dio = ApiService.dio;
+    try {
+      final response = await dio.post<ResponseBody>(
+        _chatPath,
+        data: _buildInspirationPayload(stream: true),
+        options: Options(responseType: ResponseType.stream),
+      );
+
+      if (response.statusCode == 200) {
+        final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
+        await for (final chunk in stream) {
+          // 直接yield每个字符块，因为后端返回的是逐字符流式数据
+          if (chunk.isNotEmpty) {
+            yield chunk;
+          }
+        }
+      } else {
+        throw Exception('API请求失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('生成灵感失败: $e');
+    }
+  }
+
+  // 生成灵感建议 - 统一使用流式输出
+  static Stream<String> generateInspiration() {
+    return generateInspirationStream();
+  }
+
   // ----------------- 私有辅助方法 -----------------
 
   static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords, {required bool stream}) {
@@ -166,6 +197,39 @@ class DeepSeekService {
         }
       ],
       'stream': stream,
+    };
+  }
+
+  static Map<String, dynamic> _buildInspirationPayload({required bool stream}) {
+    // 随机生成不同的用户请求，增加多样性
+    final List<String> userRequests = [
+      '我现在很无聊，给我一个有趣的灵感建议吧！',
+      '不知道该做什么，来点新鲜的想法？',
+      '想要一些创意灵感，让我的生活更有趣！',
+      '感觉有点迷茫，需要一个小小的行动建议～',
+      '想做点什么特别的事情，给我个好主意！',
+      '今天想尝试新东西，有什么推荐吗？',
+      '想要一些正能量的小建议，让心情变好！',
+      '给我一个简单又有意思的活动建议吧～',
+    ];
+    
+    final randomRequest = userRequests[DateTime.now().millisecondsSinceEpoch % userRequests.length];
+    
+    return {
+      'model': 'deepseek-chat',
+      'messages': [
+        {
+          'role': 'system',
+          'content': _inspirationSystemPrompt(),
+        },
+        {
+          'role': 'user',
+          'content': randomRequest,
+        }
+      ],
+      'stream': stream,
+      'temperature': 0.9, // 增加创造性
+      'top_p': 0.95, // 增加多样性
     };
   }
 
@@ -277,4 +341,38 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 - 避免过于深奥的术语
 - 字数控制在300-500字之间
 - 富有共情力和治愈性''';
+
+  static String _inspirationSystemPrompt() =>
+      '''你是一位充满创意和智慧的生活导师，专门为迷茫的人提供有趣、实用且富有启发性的建议。
+
+当有人不知道该做什么时，你需要给出一个简短而有趣的灵感建议。你的建议应该：
+
+1. **简洁明了**：一句话概括，不超过35字
+2. **积极正面**：充满正能量，让人感到温暖
+3. **可操作性**：具体可行，不要太抽象
+4. **富有创意**：有趣、新颖，能激发想象力
+5. **贴近生活**：符合日常生活场景
+6. **多样化风格**：每次生成不同类型和风格的建议
+7. **表情丰富**：必须包含1-2个相关的Emoji表情
+
+建议类型要多样化，可以包括：
+- 🎨 创意活动（如：画一幅日落、写一首小诗、制作手工）
+- ☕ 生活体验（如：尝试新的咖啡店、给朋友写信、探索新路线）
+- 📚 学习成长（如：学一个新单词、练习冥想、阅读一页书）
+- 💝 情感表达（如：给家人一个拥抱、感谢身边的人、写感谢卡片）
+- 🌸 自我关爱（如：泡一杯好茶、听喜欢的音乐、做面膜）
+- 🔍 探索发现（如：观察云朵的形状、寻找身边的美、拍摄有趣的照片）
+- 🏃 运动健康（如：散步10分钟、做几个深呼吸、伸展身体）
+- 🍳 美食体验（如：尝试新食谱、品尝异国料理、自制小点心）
+- 🌱 环保行动（如：种一颗小植物、整理房间、减少塑料使用）
+- 🎭 娱乐放松（如：看一部短片、听播客、玩益智游戏）
+
+风格要求：
+- 语气轻松活泼，富有感染力
+- 用词生动有趣，避免刻板表达
+- 每次生成的建议要有不同的情感色彩
+- 适当使用网络流行语或温暖的表达
+- 让人看到就想立刻行动
+
+请直接输出一句简短的灵感建议，必须包含Emoji表情，不需要任何其他格式标记或解释。''';
 }
