@@ -186,6 +186,125 @@ class ApiService {
     }
   }
 
+  /// 发送邮箱验证码
+  /// 
+  /// [request] 验证码发送请求数据
+  /// 返回发送结果
+  static Future<EmailVerificationResponse> sendVerificationCode(EmailVerificationRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/send-verification-code',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        return EmailVerificationResponse.fromJson(response.data);
+      } else {
+        throw ApiException('发送验证码失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('发送验证码失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('发送验证码失败: $e', null);
+    }
+  }
+
+  /// 验证邮箱验证码
+  /// 
+  /// [request] 验证码验证请求数据
+  /// 返回验证结果
+  static Future<EmailVerificationResponse> verifyEmailCode(EmailCodeVerifyRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/verify-email-code',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        return EmailVerificationResponse.fromJson(response.data);
+      } else {
+        throw ApiException('验证码验证失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('验证码验证失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('验证码验证失败: $e', null);
+    }
+  }
+
+  /// 带验证码的用户注册
+  /// 
+  /// [request] 注册请求数据（包含验证码）
+  /// 返回注册成功的用户信息
+  static Future<ApiUser> registerWithVerification(UserCreateWithVerificationRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/register-with-verification',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 201) {
+        // 从响应中提取用户信息
+        final userResponse = response.data;
+        return ApiUser.fromJson(userResponse['user']);
+      } else {
+        throw ApiException('注册失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        // 验证错误
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('注册失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('注册失败: $e', null);
+    }
+  }
+
+  /// 邮箱验证码登录
+  /// 
+  /// [request] 邮箱验证码登录请求数据
+  /// 返回认证token
+  static Future<AuthToken> loginWithEmailCode(EmailLoginRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/login-with-email-verification',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        final token = AuthToken.fromJson(response.data);
+        await saveToken(token.accessToken);
+        return token;
+      } else {
+        throw ApiException('登录失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw ApiException('邮箱或验证码错误', 401);
+      } else if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('登录失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('登录失败: $e', null);
+    }
+  }
+
   /// 检查API连接状态
   static Future<bool> checkConnection() async {
     try {
@@ -209,4 +328,4 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException: $message (状态码: $statusCode)';
-} 
+}

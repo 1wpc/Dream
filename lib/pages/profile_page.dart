@@ -6,6 +6,7 @@ import '../services/points_service.dart';
 import 'login_page.dart';
 import 'privacy_policy_page.dart';
 import 'purchase_credits_page.dart';
+import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -170,65 +171,16 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 显示编辑个人信息对话框
-  Future<void> _showEditProfileDialog() async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final user = authService.userProfile;
-    
-    if (user == null) return;
-    
-    final nicknameController = TextEditingController(text: user.nickname);
-    final bioController = TextEditingController(text: user.bio ?? '');
-    
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('编辑个人信息'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nicknameController,
-                decoration: const InputDecoration(
-                  labelText: '昵称',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: bioController,
-                decoration: const InputDecoration(
-                  labelText: '个人简介',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final success = await authService.updateUserProfile(
-                  nickname: nicknameController.text,
-                  bio: bioController.text,
-                );
-                
-                if (success) {
-                  Navigator.pop(context);
-                  setState(() {}); // 刷新页面
-                }
-              },
-              child: const Text('保存'),
-            ),
-          ],
-        );
-      },
+  // 导航到编辑个人信息页面
+  Future<void> _navigateToEditProfile() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const EditProfilePage()),
     );
+    
+    // 如果编辑成功，刷新页面
+    if (result == true) {
+      setState(() {});
+    }
   }
 
   // 显示登出确认对话框
@@ -470,7 +422,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 
                 // 编辑按钮
                 ElevatedButton.icon(
-                  onPressed: _showEditProfileDialog,
+                  onPressed: _navigateToEditProfile,
                   icon: const Icon(Icons.edit, size: 16),
                   label: const Text('编辑资料'),
                   style: ElevatedButton.styleFrom(

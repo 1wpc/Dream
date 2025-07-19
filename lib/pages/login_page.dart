@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
+import '../models/dream_models.dart';
 import 'main_container_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,11 +20,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   
   bool _isLoading = false;
 
+  // 验证码倒计时
+  int _loginCodeCountdown = 0;
+  int _registerCodeCountdown = 0;
+  Timer? _loginCodeTimer;
+  Timer? _registerCodeTimer;
+
   // 登录表单控制器
   final TextEditingController _loginUsernameController = TextEditingController();
   final TextEditingController _loginPasswordController = TextEditingController();
   final TextEditingController _loginPhoneController = TextEditingController();
   final TextEditingController _loginCodeController = TextEditingController();
+  final TextEditingController _loginEmailController = TextEditingController();
+  final TextEditingController _loginEmailCodeController = TextEditingController();
 
   // 注册表单控制器
   final TextEditingController _registerUsernameController = TextEditingController();
@@ -31,6 +41,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final TextEditingController _registerDisplayNameController = TextEditingController();
   final TextEditingController _registerPhoneController = TextEditingController();
   final TextEditingController _registerPhoneCodeController = TextEditingController();
+  final TextEditingController _registerEmailCodeController = TextEditingController();
 
   @override
   void initState() {
@@ -42,6 +53,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _loginCodeTimer?.cancel();
+    _registerCodeTimer?.cancel();
+    
     _mainTabController.dispose();
     _loginTabController.dispose();
     _registerTabController.dispose();
@@ -50,6 +64,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _loginPasswordController.dispose();
     _loginPhoneController.dispose();
     _loginCodeController.dispose();
+    _loginEmailController.dispose();
+    _loginEmailCodeController.dispose();
     
     _registerUsernameController.dispose();
     _registerPasswordController.dispose();
@@ -57,6 +73,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _registerDisplayNameController.dispose();
     _registerPhoneController.dispose();
     _registerPhoneCodeController.dispose();
+    _registerEmailCodeController.dispose();
     
     super.dispose();
   }
@@ -178,7 +195,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             tabs: const [
               Tab(text: '用户名'),
               Tab(text: '手机号'),
-              Tab(text: '快速登录'),
+              Tab(text: '邮箱'),
             ],
           ),
         ),
@@ -192,7 +209,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             children: [
               _buildUsernameLogin(),
               _buildPhoneLogin(),
-              _buildQuickLogin(),
+              _buildEmailLogin(),
             ],
           ),
         ),
@@ -295,7 +312,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: 12),
-              _buildSendCodeButton(),
+              _buildSendCodeButton(isLogin: true),
             ],
           ),
           const SizedBox(height: 32),
@@ -308,44 +325,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  // 快速登录
-  Widget _buildQuickLogin() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Icon(
-            Icons.flash_on,
-            size: 80,
-            color: Colors.white.withOpacity(0.7),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '一键快速体验',
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.white.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '无需注册，立即开启梦境之旅',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 40),
-          _buildActionButton(
-            '快速开始',
-            () => _handleQuickLogin(),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   // 用户名注册
   Widget _buildUsernameRegister() {
@@ -364,6 +344,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             label: '邮箱',
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInputField(
+                  controller: _registerEmailCodeController,
+                  label: '邮箱验证码',
+                  icon: Icons.verified_user_outlined,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildSendCodeButton(isLogin: false),
+            ],
           ),
           const SizedBox(height: 16),
           _buildInputField(
@@ -412,7 +407,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: 12),
-              _buildSendCodeButton(),
+              _buildSendCodeButton(isLogin: false),
             ],
           ),
           const SizedBox(height: 16),
@@ -464,19 +459,60 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
+  // 邮箱验证码登录
+  Widget _buildEmailLogin() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          _buildInputField(
+            controller: _loginEmailController,
+            label: '邮箱',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInputField(
+                  controller: _loginEmailCodeController,
+                  label: '验证码',
+                  icon: Icons.verified_user_outlined,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildSendCodeButton(isLogin: true),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _buildActionButton(
+            '登录',
+            () => _handleEmailLogin(),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 发送验证码按钮
-  Widget _buildSendCodeButton() {
+  Widget _buildSendCodeButton({bool isLogin = false}) {
+    final countdown = isLogin ? _loginCodeCountdown : _registerCodeCountdown;
+    final isCountingDown = countdown > 0;
+    
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: isCountingDown ? null : const LinearGradient(
           colors: [Color(0xFF6B73FF), Color(0xFF9B59B6)],
         ),
+        color: isCountingDown ? Colors.grey : null,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ElevatedButton(
-        onPressed: () {
-          _showMessage('验证码已发送（演示功能）');
+        onPressed: isCountingDown ? null : () {
+          _sendVerificationCode(isLogin);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
@@ -485,9 +521,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text(
-          '发送',
-          style: TextStyle(
+        child: Text(
+          isCountingDown ? '${countdown}s' : '发送',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -595,30 +631,41 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  // 处理快速登录
-  Future<void> _handleQuickLogin() async {
+  // 处理邮箱验证码登录
+  Future<void> _handleEmailLogin() async {
+    if (_loginEmailController.text.isEmpty || _loginEmailCodeController.text.isEmpty) {
+      _showMessage('请填写完整信息');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final user = await authService.signInAnonymously();
-
+      final user = await authService.signInWithEmailCode(
+        _loginEmailController.text,
+        _loginEmailCodeController.text,
+      );
+      
       if (user != null) {
         _navigateToHome();
       } else {
-        _showMessage('快速登录失败');
+        _showMessage('登录失败，请检查邮箱和验证码');
       }
     } catch (e) {
-      _showMessage('快速登录失败：$e');
+      _showMessage('登录失败：$e');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+
+
   // 处理用户名注册
   Future<void> _handleUsernameRegister() async {
     if (_registerUsernameController.text.isEmpty ||
         _registerEmailController.text.isEmpty ||
+        _registerEmailCodeController.text.isEmpty ||
         _registerPasswordController.text.isEmpty ||
         _registerDisplayNameController.text.isEmpty) {
       _showMessage('请填写完整信息');
@@ -628,21 +675,28 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final user = await authService.registerWithEmail(
-        _registerUsernameController.text, // 用户名作为邮箱字段
-        _registerPasswordController.text,
-        _registerDisplayNameController.text,
+      final request = UserCreateWithVerificationRequest(
+        username: _registerUsernameController.text,
+        email: _registerEmailController.text,
+        password: _registerPasswordController.text,
+        verificationCode: _registerEmailCodeController.text,
+        fullName: _registerDisplayNameController.text,
       );
-
-      if (user != null) {
+      
+      final user = await ApiService.registerWithVerification(request);
+      
+      if (user.id > 0) {
         _showMessage('注册成功！');
         _navigateToHome();
       } else {
         _showMessage('注册失败');
       }
     } catch (e) {
-      _showMessage('注册失败：$e');
+      if (e is ApiException) {
+        _showMessage(e.message);
+      } else {
+        _showMessage('注册失败：$e');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -677,6 +731,80 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
+  // 发送验证码
+  Future<void> _sendVerificationCode(bool isLogin) async {
+    String email;
+    String action;
+    
+    if (isLogin) {
+      email = _loginEmailController.text;
+      action = 'login';
+    } else {
+      email = _registerEmailController.text;
+      action = 'register';
+    }
+    
+    if (email.isEmpty) {
+      _showMessage('请先输入邮箱地址');
+      return;
+    }
+    
+    // 验证邮箱格式
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _showMessage('请输入正确的邮箱格式');
+      return;
+    }
+    
+    try {
+      final request = EmailVerificationRequest(
+        email: email,
+        action: action,
+      );
+      
+      final response = await ApiService.sendVerificationCode(request);
+      
+      if (response.success) {
+        _showMessage('验证码已发送到您的邮箱');
+        _startCountdown(isLogin);
+      } else {
+        _showMessage(response.message);
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        _showMessage(e.message);
+      } else {
+        _showMessage('发送验证码失败：$e');
+      }
+    }
+  }
+  
+  // 开始倒计时
+  void _startCountdown(bool isLogin) {
+    if (isLogin) {
+      setState(() => _loginCodeCountdown = 60);
+      _loginCodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          if (_loginCodeCountdown > 0) {
+            _loginCodeCountdown--;
+          } else {
+            timer.cancel();
+          }
+        });
+      });
+    } else {
+      setState(() => _registerCodeCountdown = 60);
+      _registerCodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          if (_registerCodeCountdown > 0) {
+            _registerCodeCountdown--;
+          } else {
+            timer.cancel();
+          }
+        });
+      });
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -687,4 +815,4 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       ),
     );
   }
-} 
+}

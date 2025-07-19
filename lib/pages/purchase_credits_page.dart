@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/payment_service.dart';
+import '../services/auth_service.dart';
 
 class PurchaseCreditsPage extends StatefulWidget {
   const PurchaseCreditsPage({super.key});
@@ -175,6 +177,15 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
       if (result != null && result['success'] == true) {
         // 支付成功
         if (mounted) {
+          // 刷新用户信息以更新积分
+          final authService = Provider.of<AuthService>(context, listen: false);
+          try {
+            // 从服务器重新获取用户信息以更新积分
+            await authService.refreshUserInfo();
+          } catch (e) {
+            print('刷新用户信息失败: $e');
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('支付成功！已获得 ${result['credits']} 积分'),

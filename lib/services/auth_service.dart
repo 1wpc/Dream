@@ -309,6 +309,37 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// 邮箱验证码登录
+  Future<DreamUser?> signInWithEmailCode(String email, String verificationCode) async {
+    try {
+      _setLoading(true);
+      
+      final request = EmailLoginRequest(
+        email: email,
+        verificationCode: verificationCode,
+      );
+      
+      final authToken = await ApiService.loginWithEmailCode(request);
+      _authToken = authToken.accessToken;
+      
+      // 获取用户信息
+      await _loadCurrentUser();
+      
+      _showToast('登录成功');
+      notifyListeners();
+      return _userProfile;
+    } on ApiException catch (e) {
+      _showToast(e.message);
+      return null;
+    } catch (e) {
+      print('邮箱验证码登录失败: $e');
+      _showToast('邮箱验证码登录失败: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 用户名注册
   Future<DreamUser?> registerWithEmail(String username, String password, String displayName) async {
     try {
@@ -565,6 +596,22 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// 刷新用户信息（从服务器重新获取）
+  Future<void> refreshUserInfo() async {
+    if (_authToken != null) {
+      try {
+        await _loadCurrentUser();
+        notifyListeners();
+        print('用户信息刷新成功');
+      } catch (e) {
+        print('刷新用户信息失败: $e');
+        throw e;
+      }
+    } else {
+      print('用户未登录，无法刷新信息');
+    }
+  }
+
   /// 加载当前用户信息
   Future<void> _loadCurrentUser() async {
     try {
@@ -599,4 +646,4 @@ class AuthService extends ChangeNotifier {
     _currentApiUser = null;
     _userProfile = null;
   }
-} 
+}

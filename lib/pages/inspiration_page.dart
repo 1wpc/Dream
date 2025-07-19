@@ -36,8 +36,8 @@ class _InspirationPageState extends State<InspirationPage>
     _pageController = PageController();
     _floatingController.repeat();
     
-    // 初始化时生成第一个灵感
-    _generateNewInspiration();
+    // 移除自动生成灵感，改为用户主动触发
+    // _generateNewInspiration();
   }
 
   @override

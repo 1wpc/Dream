@@ -8,6 +8,9 @@ class ApiUser {
   final String? avatar;
   final bool isActive;
   final bool isSuperuser;
+  final String pointsBalance;
+  final String totalPointsEarned;
+  final String totalPointsSpent;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -20,6 +23,9 @@ class ApiUser {
     this.avatar,
     required this.isActive,
     required this.isSuperuser,
+    required this.pointsBalance,
+    required this.totalPointsEarned,
+    required this.totalPointsSpent,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -35,6 +41,9 @@ class ApiUser {
       avatar: json['avatar'],
       isActive: json['is_active'] ?? true,
       isSuperuser: json['is_superuser'] ?? false,
+      pointsBalance: json['points_balance'] ?? '0',
+      totalPointsEarned: json['total_points_earned'] ?? '0',
+      totalPointsSpent: json['total_points_spent'] ?? '0',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
     );
@@ -51,6 +60,9 @@ class ApiUser {
       'avatar': avatar,
       'is_active': isActive,
       'is_superuser': isSuperuser,
+      'points_balance': pointsBalance,
+      'total_points_earned': totalPointsEarned,
+      'total_points_spent': totalPointsSpent,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -64,7 +76,7 @@ class ApiUser {
       avatar: avatar ?? '',
       email: email,
       phone: phone,
-      points: 100, // 新用户默认100积分
+      points: int.tryParse(pointsBalance) ?? 0, // 使用实际积分余额
       dreamCount: 0,
       followersCount: 0,
       followingCount: 0,
@@ -166,6 +178,117 @@ class AuthToken {
       'access_token': accessToken,
       'token_type': tokenType,
     };
+  }
+}
+
+// 邮箱验证码发送请求模型
+class EmailVerificationRequest {
+  final String email;
+  final String? action;
+
+  EmailVerificationRequest({
+    required this.email,
+    this.action,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      if (action != null) 'action': action,
+    };
+  }
+}
+
+// 邮箱验证码验证请求模型
+class EmailCodeVerifyRequest {
+  final String email;
+  final String code;
+  final String? action;
+
+  EmailCodeVerifyRequest({
+    required this.email,
+    required this.code,
+    this.action,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'code': code,
+      if (action != null) 'action': action,
+    };
+  }
+}
+
+// 带验证码的用户注册请求模型
+class UserCreateWithVerificationRequest {
+  final String username;
+  final String email;
+  final String password;
+  final String verificationCode;
+  final String? fullName;
+  final String? phone;
+  final String? avatar;
+
+  UserCreateWithVerificationRequest({
+    required this.username,
+    required this.email,
+    required this.password,
+    required this.verificationCode,
+    this.fullName,
+    this.phone,
+    this.avatar,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'username': username,
+      'email': email,
+      'password': password,
+      'verification_code': verificationCode,
+      if (fullName != null) 'full_name': fullName,
+      if (phone != null) 'phone': phone,
+      if (avatar != null) 'avatar': avatar,
+    };
+  }
+}
+
+// 邮箱验证码登录请求模型
+class EmailLoginRequest {
+  final String email;
+  final String verificationCode;
+
+  EmailLoginRequest({
+    required this.email,
+    required this.verificationCode,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'verification_code': verificationCode,
+    };
+  }
+}
+
+// 验证码响应模型
+class EmailVerificationResponse {
+  final bool success;
+  final String message;
+  final String? code;
+
+  EmailVerificationResponse({
+    required this.success,
+    required this.message,
+    this.code,
+  });
+
+  factory EmailVerificationResponse.fromJson(Map<String, dynamic> json) {
+    return EmailVerificationResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      code: json['code'],
+    );
   }
 }
 
@@ -687,4 +810,4 @@ class PointTask {
       'createdAt': createdAt.toIso8601String(),
     };
   }
-} 
+}
