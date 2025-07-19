@@ -42,6 +42,34 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
     super.initState();
     _scrollController.addListener(_onScroll);
     _initializeBackground();
+    _checkExistingInterpretation();
+  }
+
+  // 检查是否已有AI解析
+  void _checkExistingInterpretation() {
+    if (widget.dream.aiInterpretation != null && widget.dream.aiInterpretation!.isNotEmpty) {
+      setState(() {
+        _dreamInterpretation = widget.dream.aiInterpretation;
+        _showInterpretation = true;
+      });
+    }
+  }
+
+  // 保存AI解析结果到数据库
+  Future<void> _saveInterpretationToDatabase(String interpretation) async {
+    try {
+      final updatedDream = DreamRecord(
+        id: widget.dream.id,
+        title: widget.dream.title,
+        time: widget.dream.time,
+        content: widget.dream.content,
+        imageUrl: widget.dream.imageUrl,
+        aiInterpretation: interpretation,
+      );
+      await _databaseService.updateDream(updatedDream);
+    } catch (e) {
+      print('保存AI解析失败: $e');
+    }
   }
 
   // 初始化背景，避免重复构建
@@ -129,6 +157,9 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
         _dreamInterpretation = _streamingText;
         _isInterpreting = false;
       });
+
+      // 保存AI解析结果到数据库
+      await _saveInterpretationToDatabase(_streamingText);
 
       // 添加触觉反馈
       HapticFeedback.lightImpact();

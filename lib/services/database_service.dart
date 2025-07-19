@@ -19,8 +19,9 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'dreams.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -31,9 +32,16 @@ class DatabaseService {
         title TEXT NOT NULL,
         time TEXT NOT NULL,
         content TEXT NOT NULL,
-        image_url TEXT
+        image_url TEXT,
+        ai_interpretation TEXT
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE dreams ADD COLUMN ai_interpretation TEXT');
+    }
   }
 
   // 插入梦境记录
@@ -44,6 +52,7 @@ class DatabaseService {
       'time': dream.time,
       'content': dream.content,
       'image_url': dream.imageUrl,
+      'ai_interpretation': dream.aiInterpretation,
     });
   }
 
@@ -58,6 +67,7 @@ class DatabaseService {
         time: maps[i]['time'],
         content: maps[i]['content'],
         imageUrl: maps[i]['image_url'],
+        aiInterpretation: maps[i]['ai_interpretation'],
       );
     });
   }
@@ -78,6 +88,7 @@ class DatabaseService {
         time: maps[0]['time'],
         content: maps[0]['content'],
         imageUrl: maps[0]['image_url'],
+        aiInterpretation: maps[0]['ai_interpretation'],
       );
     }
     return null;
@@ -93,6 +104,7 @@ class DatabaseService {
         'time': dream.time,
         'content': dream.content,
         'image_url': dream.imageUrl,
+        'ai_interpretation': dream.aiInterpretation,
       },
       where: 'id = ?',
       whereArgs: [dream.id],
@@ -117,6 +129,7 @@ class DreamRecord {
   final String time;
   final String content;
   final String? imageUrl;
+  final String? aiInterpretation;
 
   DreamRecord({
     this.id,
@@ -124,6 +137,7 @@ class DreamRecord {
     required this.time,
     required this.content,
     this.imageUrl,
+    this.aiInterpretation,
   });
 
   Map<String, dynamic> toMap() {
@@ -133,6 +147,7 @@ class DreamRecord {
       'time': time,
       'content': content,
       'image_url': imageUrl,
+      'ai_interpretation': aiInterpretation,
     };
   }
 
@@ -143,6 +158,7 @@ class DreamRecord {
       time: map['time'],
       content: map['content'],
       imageUrl: map['image_url'],
+      aiInterpretation: map['ai_interpretation'],
     );
   }
-} 
+}

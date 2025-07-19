@@ -495,14 +495,22 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: Column(
               children: [
-                _buildMenuItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: '积分详情',
-                  subtitle: _pointsBalance != null 
-                    ? '余额: ${_pointsBalance!.pointsBalance} | 总获得: ${_pointsBalance!.totalPointsEarned}'
-                    : '点击查看详细积分信息',
-                  onTap: () {
-                    _showPointsDetailDialog();
+                Consumer<AuthService>(
+                  builder: (context, authService, child) {
+                    final apiUser = authService.currentApiUser;
+                    final pointsBalance = apiUser?.pointsBalance ?? '0';
+                    final totalEarned = apiUser?.totalPointsEarned ?? '0';
+                    
+                    return _buildMenuItem(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: '积分详情',
+                      subtitle: apiUser != null 
+                        ? '余额: $pointsBalance | 总获得: $totalEarned'
+                        : '点击查看详细积分信息',
+                      onTap: () {
+                        _showPointsDetailDialog();
+                      },
+                    );
                   },
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
@@ -572,71 +580,85 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // 积分卡片（带刷新功能）
   Widget _buildPointsCard() {
-    return GestureDetector(
-      onTap: _loadPointsBalance,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.star,
-                  size: 24,
-                  color: Colors.orange,
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        final apiUser = authService.currentApiUser;
+        final pointsBalance = apiUser?.pointsBalance ?? '0';
+        
+        return GestureDetector(
+          onTap: () async {
+            // 刷新用户信息以获取最新积分
+            try {
+              await authService.refreshUserInfo();
+            } catch (e) {
+              print('刷新用户信息失败: $e');
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE5E7EB),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
                 ),
-                if (_isLoadingPoints)
-                  Positioned(
-                    right: -8,
-                    top: -8,
-                    child: SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                      ),
-                    ),
-                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _pointsBalance?.pointsBalance ?? '0',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.star,
+                      size: 24,
+                      color: Colors.orange,
+                    ),
+                    if (authService.isLoading)
+                      Positioned(
+                        right: -8,
+                        top: -8,
+                        child: SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  pointsBalance,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '积分',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              '积分',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
