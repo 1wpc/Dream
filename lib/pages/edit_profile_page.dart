@@ -260,14 +260,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ],
                     Row(
                       children: [
-                        const Icon(Icons.stars_outlined, size: 20),
-                        const SizedBox(width: 8),
-                        Text('积分: ${_currentUser?.points ?? 0}'),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
                         const Icon(Icons.calendar_today_outlined, size: 20),
                         const SizedBox(width: 8),
                         Text(

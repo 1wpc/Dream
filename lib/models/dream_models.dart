@@ -292,6 +292,39 @@ class EmailVerificationResponse {
   }
 }
 
+// 用户注册响应模型（包含token）
+class UserRegisterResponse {
+  final ApiUser user;
+  final String accessToken;
+  final String tokenType;
+  final String message;
+
+  UserRegisterResponse({
+    required this.user,
+    required this.accessToken,
+    required this.tokenType,
+    required this.message,
+  });
+
+  factory UserRegisterResponse.fromJson(Map<String, dynamic> json) {
+    return UserRegisterResponse(
+      user: ApiUser.fromJson(json['user']),
+      accessToken: json['access_token'] ?? '',
+      tokenType: json['token_type'] ?? 'bearer',
+      message: json['message'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user': user.toJson(),
+      'access_token': accessToken,
+      'token_type': tokenType,
+      'message': message,
+    };
+  }
+}
+
 // API响应包装模型
 class ApiResponse<T> {
   final bool success;

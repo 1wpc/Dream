@@ -675,22 +675,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      final request = UserCreateWithVerificationRequest(
-        username: _registerUsernameController.text,
-        email: _registerEmailController.text,
-        password: _registerPasswordController.text,
-        verificationCode: _registerEmailCodeController.text,
-        fullName: _registerDisplayNameController.text,
-      );
       
-      final user = await ApiService.registerWithVerification(request);
       
-      if (user.id > 0) {
-        _showMessage('注册成功！');
-        _navigateToHome();
-      } else {
-        _showMessage('注册失败');
-      }
+      // 注册成功后，需要更新AuthService的状态
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.initAuth(); // 重新初始化认证状态，这会加载用户信息
+      
+      _showMessage('注册成功！欢迎使用梦核');
+      _navigateToHome();
     } catch (e) {
       if (e is ApiException) {
         _showMessage(e.message);

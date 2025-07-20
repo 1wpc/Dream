@@ -245,8 +245,8 @@ class ApiService {
   /// 带验证码的用户注册
   /// 
   /// [request] 注册请求数据（包含验证码）
-  /// 返回注册成功的用户信息
-  static Future<ApiUser> registerWithVerification(UserCreateWithVerificationRequest request) async {
+  /// 返回注册响应（包含用户信息和token）
+  static Future<UserRegisterResponse> registerWithVerification(UserCreateWithVerificationRequest request) async {
     try {
       final response = await _dio.post(
         '/api/v1/users/register-with-verification',
@@ -254,9 +254,11 @@ class ApiService {
       );
 
       if (response.statusCode == 201) {
-        // 从响应中提取用户信息
-        final userResponse = response.data;
-        return ApiUser.fromJson(userResponse['user']);
+        // 从响应中提取完整的注册信息
+        final registerResponse = UserRegisterResponse.fromJson(response.data);
+        // 自动保存token
+        await saveToken(registerResponse.accessToken);
+        return registerResponse;
       } else {
         throw ApiException('注册失败', response.statusCode);
       }
