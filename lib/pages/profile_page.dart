@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../services/auth_service.dart';
 import '../services/points_service.dart';
+import '../services/database_service.dart';
 import 'login_page.dart';
 import 'privacy_policy_page.dart';
 import 'purchase_credits_page.dart';
@@ -19,6 +20,8 @@ class _ProfilePageState extends State<ProfilePage> {
   PointsBalance? _pointsBalance;
   bool _isLoadingPoints = false;
   late PointsService _pointsService;
+  int dreamCount = 0;
+  bool isLoadingDreams = false;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _pointsService = PointsService();
       if (authService.isLoggedIn) {
         _loadPointsBalance();
+        _loadDreamCount();
       }
     });
   }
@@ -55,6 +59,35 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           _isLoadingPoints = false;
         });
+      }
+    }
+  }
+
+  Future<void> _loadDreamCount() async {
+    if (!mounted) return;
+    
+    setState(() {
+      isLoadingDreams = true;
+    });
+
+    try {
+      final databaseService = DatabaseService();
+      final dreams = await databaseService.getAllDreams();
+      
+      if (mounted) {
+        setState(() {
+          dreamCount = dreams.length;
+          isLoadingDreams = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingDreams = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加载梦境数量失败: $e')),
+        );
       }
     }
   }
@@ -456,18 +489,9 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 child: _buildStatCard(
                   '梦境',
-                  '${user?.dreamCount ?? 0}',
+                  '$dreamCount',
                   Icons.nights_stay,
                   Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  '关注',
-                  '${user?.followingCount ?? 0}',
-                  Icons.favorite,
-                  Colors.pink,
                 ),
               ),
             ],

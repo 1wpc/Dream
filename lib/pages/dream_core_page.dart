@@ -251,9 +251,9 @@ class _DreamCorePageState extends State<DreamCorePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '梦核',
+                  '白日做梦',
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 2,
@@ -267,7 +267,7 @@ class _DreamCorePageState extends State<DreamCorePage>
                   ),
                 ),
                 Text(
-                  'Dream Core',
+                  'Day Dream',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white70,

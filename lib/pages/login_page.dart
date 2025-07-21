@@ -108,7 +108,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      '梦核',
+                      '白日做梦',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
