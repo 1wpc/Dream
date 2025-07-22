@@ -55,6 +55,7 @@ dependencies:
   # 身份认证和状态管理
   provider: ^6.1.2
   flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
   
   # UI组件
   flutter_spinkit: ^5.2.0
