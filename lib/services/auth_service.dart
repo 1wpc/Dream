@@ -198,34 +198,23 @@ class AuthService extends ChangeNotifier {
     try {
       _setLoading(true);
       
-      // 简单验证码验证（演示用）
-      if (code != '1234') {
-        throw Exception('验证码错误，请输入1234');
-      }
-      
-      // 创建一个手机号用户档案
-      final phoneUser = DreamUser(
-        id: 'phone_${phone}_${DateTime.now().millisecondsSinceEpoch}',
-        nickname: '用户${phone.substring(phone.length - 4)}',
-        avatar: '',
+      final request = SMSLoginRequest(
         phone: phone,
-        points: 100, // 新用户赠送100积分
-        dreamCount: 0,
-        followersCount: 0,
-        followingCount: 0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        status: 'active',
+        verificationCode: code,
       );
       
-      _userProfile = phoneUser;
+      final authToken = await ApiService.loginWithSMSVerification(request);
+      _authToken = authToken.accessToken;
       
-      // 保存到本地存储
-      await _saveUserProfile();
+      // 获取用户信息
+      await _loadCurrentUser();
       
       _showToast('手机号登录成功');
       notifyListeners();
       return _userProfile;
+    } on ApiException catch (e) {
+      _showToast(e.message);
+      return null;
     } catch (e) {
       print('手机号登录失败: $e');
       _showToast('手机号登录失败: $e');
@@ -370,6 +359,93 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       print('用户名注册失败: $e');
       _showToast('用户名注册失败: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 手机号注册
+  Future<DreamUser?> registerWithPhone({
+    required String username,
+    required String phone,
+    required String verificationCode,
+    required String password,
+    String? fullName,
+  }) async {
+    try {
+      _setLoading(true);
+      
+      final request = UserCreateWithSMSVerificationRequest(
+        username: username,
+        phone: phone,
+        verificationCode: verificationCode,
+        fullName: fullName,
+        password: password,
+      );
+      
+      final registerResponse = await ApiService.registerWithSMSVerification(request);
+      _currentApiUser = registerResponse.user;
+      _authToken = registerResponse.accessToken;
+      
+      // 转换为应用内用户模型
+      _userProfile = _currentApiUser!.toDreamUser();
+      
+      // 保存到本地存储
+      await _saveUserProfile();
+      
+      _showToast('手机号注册成功');
+      notifyListeners();
+      return _userProfile;
+    } on ApiException catch (e) {
+      _showToast(e.message);
+      return null;
+    } catch (e) {
+      print('手机号注册失败: $e');
+      _showToast('手机号注册失败: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 带验证码的邮箱注册
+  Future<DreamUser?> registerWithVerification({
+    required String email,
+    required String verificationCode,
+    required String password,
+    required String displayName,
+  }) async {
+    try {
+      _setLoading(true);
+      
+      final request = UserCreateWithVerificationRequest(
+        username: email.split('@')[0], // 使用邮箱前缀作为用户名
+        email: email,
+        verificationCode: verificationCode,
+        password: password,
+        fullName: displayName,
+      );
+      
+      final registerResponse = await ApiService.registerWithVerification(request);
+      _authToken = registerResponse.accessToken;
+      _currentApiUser = registerResponse.user;
+      
+      // 转换为应用内用户模型
+      _userProfile = registerResponse.user.toDreamUser();
+      
+      // 保存到本地存储
+      await _saveUserProfile();
+      
+      _showToast('注册成功');
+      notifyListeners();
+      return _userProfile;
+    } on ApiException catch (e) {
+      _showToast(e.message);
+      return null;
+    } catch (e) {
+      print('邮箱验证码注册失败: $e');
+      _showToast('邮箱验证码注册失败: $e');
       return null;
     } finally {
       _setLoading(false);

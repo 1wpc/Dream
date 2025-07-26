@@ -307,6 +307,127 @@ class ApiService {
     }
   }
 
+  /// 发送手机号验证码
+  /// 
+  /// [request] 手机号验证码发送请求数据
+  /// 返回发送结果
+  static Future<SMSVerificationResponse> sendSMSVerificationCode(SMSVerificationRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/send-sms-verification-code',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        return SMSVerificationResponse.fromJson(response.data);
+      } else {
+        throw ApiException('发送短信验证码失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('发送短信验证码失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('发送短信验证码失败: $e', null);
+    }
+  }
+
+  /// 验证手机号验证码
+  /// 
+  /// [request] 手机号验证码验证请求数据
+  /// 返回验证结果
+  static Future<SMSVerificationResponse> verifySMSCode(SMSCodeVerifyRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/verify-sms-code',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        return SMSVerificationResponse.fromJson(response.data);
+      } else {
+        throw ApiException('短信验证码验证失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('短信验证码验证失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('短信验证码验证失败: $e', null);
+    }
+  }
+
+  /// 手机号验证码登录
+  /// 
+  /// [request] 手机号验证码登录请求数据
+  /// 返回认证token
+  static Future<AuthToken> loginWithSMSVerification(SMSLoginRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/login-with-sms-verification',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        final token = AuthToken.fromJson(response.data);
+        await saveToken(token.accessToken);
+        return token;
+      } else {
+        throw ApiException('手机号登录失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw ApiException('手机号或验证码错误', 401);
+      } else if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('手机号登录失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('手机号登录失败: $e', null);
+    }
+  }
+
+  /// 带手机号验证码的用户注册
+  /// 
+  /// [request] 手机号注册请求数据（包含验证码）
+  /// 返回注册响应（包含用户信息和token）
+  static Future<UserRegisterResponse> registerWithSMSVerification(UserCreateWithSMSVerificationRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/users/register-with-sms-verification',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 201) {
+        // 从响应中提取完整的注册信息
+        final registerResponse = UserRegisterResponse.fromJson(response.data);
+        // 自动保存token
+        await saveToken(registerResponse.accessToken);
+        return registerResponse;
+      } else {
+        throw ApiException('手机号注册失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        // 验证错误
+        final errors = e.response?.data['detail'] ?? [];
+        final errorMessages = errors.map((error) => error['msg']).join(', ');
+        throw ApiException('手机号注册失败: $errorMessages', 422);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('手机号注册失败: $e', null);
+    }
+  }
+
   /// 检查API连接状态
   static Future<bool> checkConnection() async {
     try {

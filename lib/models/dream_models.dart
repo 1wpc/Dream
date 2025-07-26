@@ -292,6 +292,117 @@ class EmailVerificationResponse {
   }
 }
 
+// 手机号验证码发送请求模型
+class SMSVerificationRequest {
+  final String phone;
+  final String? action;
+
+  SMSVerificationRequest({
+    required this.phone,
+    this.action,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'phone': phone,
+      if (action != null) 'action': action,
+    };
+  }
+}
+
+// 手机号验证码验证请求模型
+class SMSCodeVerifyRequest {
+  final String phone;
+  final String code;
+  final String? action;
+
+  SMSCodeVerifyRequest({
+    required this.phone,
+    required this.code,
+    this.action,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'phone': phone,
+      'code': code,
+      if (action != null) 'action': action,
+    };
+  }
+}
+
+// 手机号验证码登录请求模型
+class SMSLoginRequest {
+  final String phone;
+  final String verificationCode;
+
+  SMSLoginRequest({
+    required this.phone,
+    required this.verificationCode,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'phone': phone,
+      'verification_code': verificationCode,
+    };
+  }
+}
+
+// 带手机号验证码的用户注册请求模型
+class UserCreateWithSMSVerificationRequest {
+  final String username;
+  final String? email;
+  final String password;
+  final String phone;
+  final String verificationCode;
+  final String? fullName;
+  final String? avatar;
+
+  UserCreateWithSMSVerificationRequest({
+    required this.username,
+    this.email,
+    required this.password,
+    required this.phone,
+    required this.verificationCode,
+    this.fullName,
+    this.avatar,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'username': username,
+      if (email != null) 'email': email,
+      'password': password,
+      'phone': phone,
+      'verification_code': verificationCode,
+      if (fullName != null) 'full_name': fullName,
+      if (avatar != null) 'avatar': avatar,
+    };
+  }
+}
+
+// 手机号验证码响应模型
+class SMSVerificationResponse {
+  final bool success;
+  final String message;
+  final String? code;
+
+  SMSVerificationResponse({
+    required this.success,
+    required this.message,
+    this.code,
+  });
+
+  factory SMSVerificationResponse.fromJson(Map<String, dynamic> json) {
+    return SMSVerificationResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      code: json['code'],
+    );
+  }
+}
+
 // 用户注册响应模型（包含token）
 class UserRegisterResponse {
   final ApiUser user;
