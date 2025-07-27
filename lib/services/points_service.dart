@@ -31,7 +31,7 @@ class PointsService {
   Future<PointsBalance?> getPointsBalance() async {
     try {
       // 检查用户是否登录
-      final token = await ApiService.getToken();
+      final token = await ApiService.getAccessToken();
       if (token == null) {
         print('用户未登录，无法获取积分余额');
         return null;

@@ -8,8 +8,13 @@ import '../utills/env.dart';
 class ApiService {
   static late Dio _dio;
   static const _secureStorage = FlutterSecureStorage();
-  static const String _tokenKey = 'auth_token';
-  static String? _cachedToken;
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _tokenExpiryKey = 'token_expiry';
+  static String? _cachedAccessToken;
+  static String? _cachedRefreshToken;
+  static DateTime? _tokenExpiry;
+  static bool _isRefreshing = false;
 
   /// 初始化API服务
   static void init() {
@@ -23,19 +28,35 @@ class ApiService {
       },
     ));
 
-    // 添加请求拦截器，自动添加认证头
+    // 添加请求拦截器，自动添加认证头和处理token刷新
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await getToken();
+        // 检查token是否需要刷新
+        await _checkAndRefreshToken();
+        
+        final token = await getAccessToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         handler.next(options);
       },
       onError: (error, handler) async {
-        // 如果是401错误（未授权），清除本地token
+        // 如果是401错误（未授权），尝试刷新token
         if (error.response?.statusCode == 401) {
-          await clearToken();
+          try {
+            await refreshToken();
+            // 重试原请求
+            final token = await getAccessToken();
+            if (token != null) {
+              error.requestOptions.headers['Authorization'] = 'Bearer $token';
+              final response = await _dio.fetch(error.requestOptions);
+              handler.resolve(response);
+              return;
+            }
+          } catch (e) {
+            // 刷新失败，清除所有token
+            await clearAllTokens();
+          }
         }
         handler.next(error);
       },
@@ -49,22 +70,70 @@ class ApiService {
     ));
   }
 
-  /// 保存认证token
+  /// 保存认证token（双重token）
+  static Future<void> saveTokens(AuthToken authToken) async {
+    _cachedAccessToken = authToken.accessToken;
+    _cachedRefreshToken = authToken.refreshToken;
+    _tokenExpiry = DateTime.now().add(Duration(seconds: authToken.expiresIn));
+    
+    await _secureStorage.write(key: _accessTokenKey, value: authToken.accessToken);
+    await _secureStorage.write(key: _refreshTokenKey, value: authToken.refreshToken);
+    await _secureStorage.write(key: _tokenExpiryKey, value: _tokenExpiry!.toIso8601String());
+  }
+
+  /// 保存单个access token（用于兼容旧代码）
   static Future<void> saveToken(String token) async {
-    _cachedToken = token;
-    await _secureStorage.write(key: _tokenKey, value: token);
+    _cachedAccessToken = token;
+    // 为单token设置默认过期时间（1小时），避免自动刷新逻辑出错
+    _tokenExpiry = DateTime.now().add(Duration(hours: 1));
+    
+    await _secureStorage.write(key: _accessTokenKey, value: token);
+    await _secureStorage.write(key: _tokenExpiryKey, value: _tokenExpiry!.toIso8601String());
   }
 
-  /// 获取认证token
+  /// 获取access token
+  static Future<String?> getAccessToken() async {
+    _cachedAccessToken ??= await _secureStorage.read(key: _accessTokenKey);
+    return _cachedAccessToken;
+  }
+
+  /// 获取refresh token
+  static Future<String?> getRefreshToken() async {
+    _cachedRefreshToken ??= await _secureStorage.read(key: _refreshTokenKey);
+    return _cachedRefreshToken;
+  }
+
+  /// 获取token过期时间
+  static Future<DateTime?> getTokenExpiry() async {
+    if (_tokenExpiry == null) {
+      final expiryStr = await _secureStorage.read(key: _tokenExpiryKey);
+      if (expiryStr != null) {
+        _tokenExpiry = DateTime.tryParse(expiryStr);
+      }
+    }
+    return _tokenExpiry;
+  }
+
+  /// 获取认证token（兼容旧代码）
   static Future<String?> getToken() async {
-    _cachedToken ??= await _secureStorage.read(key: _tokenKey);
-    return _cachedToken;
+    return await getAccessToken();
   }
 
-  /// 清除认证token
+  /// 清除所有认证token
+  static Future<void> clearAllTokens() async {
+    _cachedAccessToken = null;
+    _cachedRefreshToken = null;
+    _tokenExpiry = null;
+    _isRefreshing = false;
+    
+    await _secureStorage.delete(key: _accessTokenKey);
+    await _secureStorage.delete(key: _refreshTokenKey);
+    await _secureStorage.delete(key: _tokenExpiryKey);
+  }
+
+  /// 清除认证token（兼容旧代码）
   static Future<void> clearToken() async {
-    _cachedToken = null;
-    await _secureStorage.delete(key: _tokenKey);
+    await clearAllTokens();
   }
 
   /// 用户注册
@@ -111,7 +180,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(response.data);
-        await saveToken(token.accessToken);
+        await saveTokens(token);
         return token;
       } else {
         throw ApiException('登录失败', response.statusCode);
@@ -256,8 +325,18 @@ class ApiService {
       if (response.statusCode == 201) {
         // 从响应中提取完整的注册信息
         final registerResponse = UserRegisterResponse.fromJson(response.data);
-        // 自动保存token
-        await saveToken(registerResponse.accessToken);
+        // 自动保存token（如果响应包含refresh token则使用双重token）
+        if (registerResponse.refreshToken != null) {
+          final authToken = AuthToken(
+            accessToken: registerResponse.accessToken,
+            refreshToken: registerResponse.refreshToken!,
+            tokenType: 'bearer',
+            expiresIn: 3600,
+          );
+          await saveTokens(authToken);
+        } else {
+          await saveToken(registerResponse.accessToken);
+        }
         return registerResponse;
       } else {
         throw ApiException('注册失败', response.statusCode);
@@ -288,7 +367,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(response.data);
-        await saveToken(token.accessToken);
+        await saveTokens(token);
         return token;
       } else {
         throw ApiException('登录失败', response.statusCode);
@@ -376,7 +455,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(response.data);
-        await saveToken(token.accessToken);
+        await saveTokens(token);
         return token;
       } else {
         throw ApiException('手机号登录失败', response.statusCode);
@@ -409,8 +488,18 @@ class ApiService {
       if (response.statusCode == 201) {
         // 从响应中提取完整的注册信息
         final registerResponse = UserRegisterResponse.fromJson(response.data);
-        // 自动保存token
-        await saveToken(registerResponse.accessToken);
+        // 自动保存token（如果响应包含refresh token则使用双重token）
+        if (registerResponse.refreshToken != null) {
+          final authToken = AuthToken(
+            accessToken: registerResponse.accessToken,
+            refreshToken: registerResponse.refreshToken!,
+            tokenType: 'bearer',
+            expiresIn: 3600,
+          );
+          await saveTokens(authToken);
+        } else {
+          await saveToken(registerResponse.accessToken);
+        }
         return registerResponse;
       } else {
         throw ApiException('手机号注册失败', response.statusCode);
@@ -433,6 +522,90 @@ class ApiService {
     try {
       final response = await _dio.get('/health');
       return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 刷新访问令牌
+  static Future<AccessTokenResponse> refreshToken() async {
+    try {
+      final refreshToken = await getRefreshToken();
+      if (refreshToken == null) {
+        throw ApiException('没有可用的刷新令牌', 401);
+      }
+
+      final request = RefreshTokenRequest(refreshToken: refreshToken);
+      final response = await _dio.post(
+        '/api/v1/users/refresh-token',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        final accessTokenResponse = AccessTokenResponse.fromJson(response.data);
+        
+        // 更新access token和过期时间
+        _cachedAccessToken = accessTokenResponse.accessToken;
+        _tokenExpiry = DateTime.now().add(Duration(seconds: accessTokenResponse.expiresIn));
+        
+        await _secureStorage.write(key: _accessTokenKey, value: accessTokenResponse.accessToken);
+        await _secureStorage.write(key: _tokenExpiryKey, value: _tokenExpiry!.toIso8601String());
+        
+        return accessTokenResponse;
+      } else {
+        throw ApiException('刷新令牌失败', response.statusCode);
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        // 刷新令牌无效，清除所有token
+        await clearAllTokens();
+        throw ApiException('刷新令牌已过期，请重新登录', 401);
+      }
+      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+    } catch (e) {
+      throw ApiException('刷新令牌失败: $e', null);
+    }
+  }
+
+  /// 检查并自动刷新token
+  static Future<void> _checkAndRefreshToken() async {
+    try {
+      // 如果正在刷新中，直接返回
+      if (_isRefreshing) {
+        return;
+      }
+      
+      final expiry = await getTokenExpiry();
+      final refreshTokenValue = await getRefreshToken();
+      
+      // 只有在有refresh token和过期时间的情况下才进行自动刷新
+      if (expiry != null && refreshTokenValue != null) {
+        final now = DateTime.now();
+        final timeUntilExpiry = expiry.difference(now);
+        
+        // 如果token在5分钟内过期，则刷新
+        if (timeUntilExpiry.inMinutes <= 5 && timeUntilExpiry.inSeconds > 0) {
+          _isRefreshing = true;
+          print('Token即将过期，自动刷新中...');
+          await refreshToken();
+          print('Token刷新成功');
+          _isRefreshing = false;
+        }
+      }
+    } catch (e) {
+      _isRefreshing = false;
+      print('自动刷新token失败: $e');
+      // 不抛出异常，让请求继续进行
+    }
+  }
+
+  /// 检查token是否有效
+  static Future<bool> isTokenValid() async {
+    try {
+      final expiry = await getTokenExpiry();
+      if (expiry == null) return false;
+      
+      return DateTime.now().isBefore(expiry);
     } catch (e) {
       return false;
     }

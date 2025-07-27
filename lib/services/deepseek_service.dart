@@ -6,6 +6,9 @@ import 'api_service.dart';
 class DeepSeekService {
   // 后端统一 Chat Completions 路径
   static const String _chatPath = '/api/v1/chat/completions';
+  
+  // 存储历史灵感，用于避免重复
+  static final List<String> _inspirationHistory = [];
 
   // 生成梦境场景描述 - 流式输出版本
   static Stream<String> generateDreamSceneStream({String? styleKeywords}) async* {
@@ -103,6 +106,8 @@ class DeepSeekService {
   // 生成灵感建议 - 流式输出版本
   static Stream<String> generateInspirationStream() async* {
     final dio = ApiService.dio;
+    String fullInspiration = '';
+    
     try {
       final response = await dio.post<ResponseBody>(
         _chatPath,
@@ -115,8 +120,14 @@ class DeepSeekService {
         await for (final chunk in stream) {
           // 直接yield每个字符块，因为后端返回的是逐字符流式数据
           if (chunk.isNotEmpty) {
+            fullInspiration += chunk;
             yield chunk;
           }
+        }
+        
+        // 流式输出完成后，将完整的灵感添加到历史记录
+        if (fullInspiration.trim().isNotEmpty) {
+          _addToInspirationHistory(fullInspiration.trim());
         }
       } else {
         throw Exception('API请求失败: ${response.statusCode}');
@@ -124,6 +135,26 @@ class DeepSeekService {
     } catch (e) {
       throw Exception('生成灵感失败: $e');
     }
+  }
+  
+  // 添加灵感到历史记录
+  static void _addToInspirationHistory(String inspiration) {
+    _inspirationHistory.add(inspiration);
+    
+    // 限制历史记录数量，最多保留10条
+    if (_inspirationHistory.length > 10) {
+      _inspirationHistory.removeAt(0);
+    }
+  }
+  
+  // 清空灵感历史记录（可选，用于重置）
+  static void clearInspirationHistory() {
+    _inspirationHistory.clear();
+  }
+  
+  // 获取灵感历史记录（可选，用于调试）
+  static List<String> getInspirationHistory() {
+    return List.from(_inspirationHistory);
   }
 
   // 生成灵感建议 - 统一使用流式输出
@@ -215,20 +246,51 @@ class DeepSeekService {
     
     final randomRequest = userRequests[DateTime.now().millisecondsSinceEpoch % userRequests.length];
     
+    // 生成随机项目编码，增强随机性
+    final random = DateTime.now().millisecondsSinceEpoch;
+    final projectCode = (random % 9000 + 1000).toString(); // 生成4位随机数
+    final requestWithCode = '$randomRequest 项目编码：$projectCode';
+    
+    // 构建对话历史，包含历史灵感记录
+    List<Map<String, String>> messages = [
+      {
+        'role': 'system',
+        'content': _inspirationSystemPrompt(),
+      },
+    ];
+    
+    // 添加历史对话，最多保留最近5条
+    final recentHistory = _inspirationHistory.length > 5 
+        ? _inspirationHistory.sublist(_inspirationHistory.length - 5)
+        : _inspirationHistory;
+    
+    for (int i = 0; i < recentHistory.length; i++) {
+      messages.add({
+        'role': 'user',
+        'content': '给我一个灵感建议',
+      });
+      messages.add({
+        'role': 'assistant', 
+        'content': recentHistory[i],
+      });
+    }
+    
+    // 添加当前请求，并提示不要重复
+    String currentRequest = requestWithCode;
+    if (_inspirationHistory.isNotEmpty) {
+      currentRequest += '\n\n请注意：不要重复之前已经给出的建议，要提供全新的、不同的灵感。';
+    }
+    
+    messages.add({
+      'role': 'user',
+      'content': currentRequest,
+    });
+    
     return {
       'model': 'deepseek-chat',
-      'messages': [
-        {
-          'role': 'system',
-          'content': _inspirationSystemPrompt(),
-        },
-        {
-          'role': 'user',
-          'content': randomRequest,
-        }
-      ],
+      'messages': messages,
       'stream': stream,
-      'temperature': 0.9, // 增加创造性
+      'temperature': 1.1, // 提高温度值，增加创造性和随机性
       'top_p': 0.95, // 增加多样性
     };
   }

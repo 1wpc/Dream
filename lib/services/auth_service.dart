@@ -56,7 +56,7 @@ class AuthService extends ChangeNotifier {
       _setLoading(true);
       
       // 获取本地保存的token
-      _authToken = await ApiService.getToken();
+      _authToken = await ApiService.getAccessToken();
       
       if (_authToken != null) {
         // 尝试获取用户信息验证token有效性
@@ -715,7 +715,7 @@ class AuthService extends ChangeNotifier {
 
   /// 清除本地认证数据
   Future<void> _clearLocalAuthData() async {
-    await ApiService.clearToken();
+    await ApiService.clearAllTokens();
     await _secureStorage.deleteAll();
     
     _authToken = null;

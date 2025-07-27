@@ -159,24 +159,32 @@ class UserUpdateRequest {
 // 登录响应Token模型
 class AuthToken {
   final String accessToken;
+  final String refreshToken;
   final String tokenType;
+  final int expiresIn;
 
   AuthToken({
     required this.accessToken,
+    required this.refreshToken,
     required this.tokenType,
+    required this.expiresIn,
   });
 
   factory AuthToken.fromJson(Map<String, dynamic> json) {
     return AuthToken(
       accessToken: json['access_token'] ?? '',
+      refreshToken: json['refresh_token'] ?? '',
       tokenType: json['token_type'] ?? 'bearer',
+      expiresIn: json['expires_in'] ?? 3600,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'access_token': accessToken,
+      'refresh_token': refreshToken,
       'token_type': tokenType,
+      'expires_in': expiresIn,
     };
   }
 }
@@ -407,12 +415,14 @@ class SMSVerificationResponse {
 class UserRegisterResponse {
   final ApiUser user;
   final String accessToken;
+  final String? refreshToken;
   final String tokenType;
   final String message;
 
   UserRegisterResponse({
     required this.user,
     required this.accessToken,
+    this.refreshToken,
     required this.tokenType,
     required this.message,
   });
@@ -421,6 +431,7 @@ class UserRegisterResponse {
     return UserRegisterResponse(
       user: ApiUser.fromJson(json['user']),
       accessToken: json['access_token'] ?? '',
+      refreshToken: json['refresh_token'],
       tokenType: json['token_type'] ?? 'bearer',
       message: json['message'] ?? '',
     );
@@ -430,6 +441,7 @@ class UserRegisterResponse {
     return {
       'user': user.toJson(),
       'access_token': accessToken,
+      'refresh_token': refreshToken,
       'token_type': tokenType,
       'message': message,
     };
@@ -952,6 +964,50 @@ class PointTask {
       'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+    };
+  }
+}
+
+// Token刷新请求模型
+class RefreshTokenRequest {
+  final String refreshToken;
+
+  RefreshTokenRequest({
+    required this.refreshToken,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'refresh_token': refreshToken,
+    };
+  }
+}
+
+// Access Token响应模型
+class AccessTokenResponse {
+  final String accessToken;
+  final String tokenType;
+  final int expiresIn;
+
+  AccessTokenResponse({
+    required this.accessToken,
+    required this.tokenType,
+    required this.expiresIn,
+  });
+
+  factory AccessTokenResponse.fromJson(Map<String, dynamic> json) {
+    return AccessTokenResponse(
+      accessToken: json['access_token'] ?? '',
+      tokenType: json['token_type'] ?? 'bearer',
+      expiresIn: json['expires_in'] ?? 3600,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'access_token': accessToken,
+      'token_type': tokenType,
+      'expires_in': expiresIn,
     };
   }
 }
