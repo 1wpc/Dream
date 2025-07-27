@@ -6,6 +6,11 @@ import '../services/jimeng_service.dart';
 import 'dream_style_selection_page.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart';
+import 'package:flutter/services.dart';
 
 // 加载期间显示的名言列表
 const List<String> _quotes = [
@@ -363,6 +368,155 @@ class _DaydreamPageState extends State<DaydreamPage> {
     }
   }
 
+  // 保存图片到本地
+  Future<void> _saveImageToGallery() async {
+    if (_scenes.isEmpty) return;
+    
+    try {
+      // 检查并请求权限
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+        final hasAccessAfterRequest = await Gal.hasAccess();
+        if (!hasAccessAfterRequest) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('需要相册权限才能保存图片'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+      
+      // 显示保存中提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('正在保存图片...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+      
+      // 下载图片
+      final imageUrl = _scenes[_currentSceneIndex].imageUrl;
+      final response = await http.get(Uri.parse(imageUrl));
+      
+      if (response.statusCode == 200) {
+        // 创建临时文件
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/dream_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await tempFile.writeAsBytes(response.bodyBytes);
+        
+        // 保存到相册
+        await Gal.putImage(tempFile.path);
+        
+        // 删除临时文件
+        await tempFile.delete();
+        
+        // 触觉反馈
+        HapticFeedback.lightImpact();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ 图片已保存到相册'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        throw Exception('下载图片失败');
+      }
+    } catch (e) {
+      debugPrint('保存图片失败: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 保存失败: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 显示保存确认对话框
+  void _showSaveDialog() {
+    // 触觉反馈
+    HapticFeedback.mediumImpact();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black.withOpacity(0.9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.save_alt,
+                color: Colors.white,
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Text(
+                '保存图片',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            '是否将当前梦境图片保存到相册？',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '取消',
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _saveImageToGallery();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+              ),
+              child: const Text(
+                '保存',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -371,28 +525,28 @@ class _DaydreamPageState extends State<DaydreamPage> {
           // 背景图片
           if (!_isLoading && _scenes.isNotEmpty)
             Positioned.fill(
-              child: CachedNetworkImage(
-                imageUrl: _scenes[_currentSceneIndex].imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
+              child: GestureDetector(
+                onLongPress: _showSaveDialog,
+                child: CachedNetworkImage(
+                  imageUrl: _scenes[_currentSceneIndex].imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          // 半透明遮罩
-          Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
+
           // 加载指示器
           if (_isLoading)
             Center(

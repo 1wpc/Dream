@@ -66,6 +66,11 @@ dependencies:
   
   # 支付宝支付
   tobias: ^3.3.2
+  
+  # 图片保存
+  permission_handler: ^11.3.1
+  gal: ^2.3.0
+  
 tobias:
   url_scheme: dream
 
