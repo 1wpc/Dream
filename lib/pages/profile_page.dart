@@ -441,16 +441,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 
                 const SizedBox(height: 8),
                 
-                // 个人简介
-                Text(
-                  user?.bio ?? '这个人很神秘，什么都没有留下...',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
                 const SizedBox(height: 16),
                 
                 // 编辑按钮

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import '../models/dream_models.dart';
 
@@ -11,11 +13,6 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nicknameController = TextEditingController();
-  final _bioController = TextEditingController();
-  final _phoneController = TextEditingController();
-  
   bool _isLoading = false;
   DreamUser? _currentUser;
 
@@ -28,27 +25,60 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void _loadUserData() {
     final authService = Provider.of<AuthService>(context, listen: false);
     _currentUser = authService.userProfile;
+  }
+
+  // 显示编辑弹窗
+  Future<void> _showEditDialog(String title, String currentValue, String field, {int maxLines = 1, int? maxLength, String? Function(String?)? validator}) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: currentValue);
+        return AlertDialog(
+          title: Text('编辑$title'),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: title,
+              hintText: '请输入$title',
+              border: const OutlineInputBorder(),
+            ),
+            maxLines: maxLines,
+            maxLength: maxLength,
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (validator != null) {
+                  final error = validator(value);
+                  if (error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(error), backgroundColor: Colors.red),
+                    );
+                    return;
+                  }
+                }
+                Navigator.pop(context, value);
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
     
-    if (_currentUser != null) {
-      _nicknameController.text = _currentUser!.nickname;
-      _bioController.text = _currentUser!.bio ?? '';
-      _phoneController.text = _currentUser!.phone ?? '';
+    if (result != null) {
+      await _updateField(field, result);
     }
   }
-
-  @override
-  void dispose() {
-    _nicknameController.dispose();
-    _bioController.dispose();
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  
+  // 更新单个字段
+  Future<void> _updateField(String field, String value) async {
     setState(() {
       _isLoading = true;
     });
@@ -56,20 +86,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       
-      final success = await authService.updateUserProfile(
-        nickname: _nicknameController.text.trim(),
-        bio: _bioController.text.trim(),
-        phone: _phoneController.text.trim(),
-      );
+      bool success = false;
+      switch (field) {
+        case 'nickname':
+          success = await authService.updateUserProfile(
+            nickname: value,
+            bio: _currentUser?.bio,
+            phone: _currentUser?.phone,
+          );
+          break;
+        case 'bio':
+          success = await authService.updateUserProfile(
+            nickname: _currentUser?.nickname ?? '',
+            bio: value,
+            phone: _currentUser?.phone,
+          );
+          break;
+        case 'phone':
+          success = await authService.updateUserProfile(
+            nickname: _currentUser?.nickname ?? '',
+            bio: _currentUser?.bio,
+            phone: value,
+          );
+          break;
+      }
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('个人信息更新成功'),
+            content: Text('更新成功'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(true); // 返回true表示有更新
+        _loadUserData(); // 重新加载数据
       }
     } catch (e) {
       if (mounted) {
@@ -92,192 +141,234 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
-        title: const Text('编辑个人信息'),
-        backgroundColor: Colors.deepPurple,
+        title: const Text('编辑资料'),
+        backgroundColor: const Color(0xFF16213E),
         foregroundColor: Colors.white,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    '保存',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-          ),
-        ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // 头像部分
-            Center(
-              child: Stack(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.grey[300],
-                    backgroundImage: _currentUser?.avatar.isNotEmpty == true
-                        ? NetworkImage(_currentUser!.avatar)
-                        : null,
-                    child: _currentUser?.avatar.isEmpty != false
-                        ? Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Colors.grey[600],
-                          )
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          // TODO: 实现头像上传功能
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('头像上传功能待实现'),
+                  // 头像区域
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.grey[300],
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Stack(
+                      children: [
+                        ClipOval(
+                           child: _currentUser?.avatar != null
+                               ? CachedNetworkImage(
+                                   imageUrl: _currentUser!.avatar,
+                                   width: 96,
+                                   height: 96,
+                                   fit: BoxFit.cover,
+                                   placeholder: (context, url) => const CircularProgressIndicator(),
+                                   errorWidget: (context, url, error) => const Icon(
+                                     Icons.person,
+                                     size: 50,
+                                     color: Colors.grey,
+                                   ),
+                                 )
+                               : const Icon(
+                                   Icons.person,
+                                   size: 50,
+                                   color: Colors.grey,
+                                 ),
+                         ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.blue,
                             ),
-                          );
-                        },
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // 个人信息列表
+                  Card(
+                    color: const Color(0xFF16213E),
+                    child: Column(
+                      children: [
+                        // 昵称
+                        ListTile(
+                          leading: const Icon(Icons.person, color: Colors.white70),
+                          title: const Text(
+                            '昵称',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          subtitle: Text(
+                            _currentUser?.nickname ?? '未设置',
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+                          onTap: () => _showEditDialog(
+                            '昵称',
+                            _currentUser?.nickname ?? '',
+                            'nickname',
+                            maxLength: 20,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入昵称';
+                              }
+                              if (value.trim().length > 20) {
+                                return '昵称不能超过20个字符';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const Divider(color: Colors.white24, height: 1),
+                        
+                        // 个人简介
+                        ListTile(
+                          leading: const Icon(Icons.description, color: Colors.white70),
+                          title: const Text(
+                            '个人简介',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          subtitle: Text(
+                            _currentUser?.bio?.isNotEmpty == true ? _currentUser!.bio! : '未设置',
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+                          onTap: () => _showEditDialog(
+                            '个人简介',
+                            _currentUser?.bio ?? '',
+                            'bio',
+                            maxLines: 3,
+                            maxLength: 100,
+                            validator: (value) {
+                              if (value != null && value.trim().length > 100) {
+                                return '个人简介不能超过100个字符';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const Divider(color: Colors.white24, height: 1),
+                        
+                        // 手机号
+                        ListTile(
+                          leading: const Icon(Icons.phone, color: Colors.white70),
+                          title: const Text(
+                            '手机号',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          subtitle: Text(
+                            _currentUser?.phone?.isNotEmpty == true ? _currentUser!.phone! : '未设置',
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+                          onTap: () => _showEditDialog(
+                            '手机号',
+                            _currentUser?.phone ?? '',
+                            'phone',
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty) {
+                                if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(value.trim())) {
+                                  return '请输入正确的手机号格式';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // 账户信息卡片
+                  Card(
+                    color: const Color(0xFF16213E),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '账户信息',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.email, color: Colors.white70, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '邮箱: ',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _currentUser?.email ?? '未设置',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, color: Colors.white70, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '注册时间: ',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _currentUser?.createdAt != null
+                                       ? DateFormat('yyyy-MM-dd HH:mm').format(_currentUser!.createdAt!)
+                                       : '未知',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            
-            // 昵称输入框
-            TextFormField(
-              controller: _nicknameController,
-              decoration: const InputDecoration(
-                labelText: '昵称',
-                hintText: '请输入昵称',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '请输入昵称';
-                }
-                if (value.trim().length < 2) {
-                  return '昵称至少需要2个字符';
-                }
-                if (value.trim().length > 20) {
-                  return '昵称不能超过20个字符';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // 个人简介输入框
-            TextFormField(
-              controller: _bioController,
-              decoration: const InputDecoration(
-                labelText: '个人简介',
-                hintText: '介绍一下自己吧',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description_outlined),
-              ),
-              maxLines: 3,
-              maxLength: 100,
-              validator: (value) {
-                if (value != null && value.length > 100) {
-                  return '个人简介不能超过100个字符';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // 手机号输入框
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: '手机号',
-                hintText: '请输入手机号',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.phone_outlined),
-              ),
-              keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value != null && value.isNotEmpty) {
-                  // 简单的手机号验证
-                  if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(value)) {
-                    return '请输入正确的手机号格式';
-                  }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            
-            // 用户信息卡片
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '账户信息',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_currentUser?.email != null) ...[
-                      Row(
-                        children: [
-                          const Icon(Icons.email_outlined, size: 20),
-                          const SizedBox(width: 8),
-                          Text('邮箱: ${_currentUser!.email}'),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today_outlined, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          '注册时间: ${_currentUser?.createdAt != null ? _formatDate(_currentUser!.createdAt!) : "未知"}',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
   
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
+
 }

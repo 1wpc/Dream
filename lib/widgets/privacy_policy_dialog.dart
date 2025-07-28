@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/privacy_service.dart';
+import '../constants/privacy_policy_content.dart';
 
 class PrivacyPolicyDialog extends StatelessWidget {
   final VoidCallback onAgree;
@@ -94,16 +95,16 @@ class PrivacyPolicyDialog extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        '更新日期：2024年1月1日',
-                        style: TextStyle(
+                      Text(
+                        '更新日期：${PrivacyPolicyContent.lastUpdated}',
+                        style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        '在开始使用之前，请仔细阅读我们的隐私政策。我们重视您的隐私，并承诺保护您的个人信息。',
+                        PrivacyPolicyContent.introduction,
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
@@ -111,65 +112,13 @@ class PrivacyPolicyDialog extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _buildPolicyPoint(
-                        '1. 信息收集',
-                        '我们可能收集以下类型的信息：\n'
-                        '• 账户信息：用户名、邮箱地址等注册信息\n'
-                        '• 梦境记录：您主动输入的梦境内容和相关数据\n'
-                        '• 使用数据：应用使用统计、功能偏好等\n'
-                        '• 设备信息：设备型号、操作系统版本等技术信息',
-                      ),
-                      _buildPolicyPoint(
-                        '2. 信息使用',
-                        '我们使用收集的信息用于：\n'
-                        '• 提供和改进应用服务\n'
-                        '• 个性化用户体验\n'
-                        '• 数据分析和统计\n'
-                        '• 技术支持和客户服务\n'
-                        '• 安全防护和欺诈预防',
-                      ),
-                      _buildPolicyPoint(
-                        '3. 信息分享',
-                        '我们不会向第三方出售、交易或转让您的个人信息，除非：\n'
-                        '• 获得您的明确同意\n'
-                        '• 法律法规要求\n'
-                        '• 保护我们的权利和安全\n'
-                        '• 与可信的服务提供商合作（在严格的保密协议下）',
-                      ),
-                      _buildPolicyPoint(
-                        '4. 数据安全',
-                        '我们采取多种安全措施保护您的信息：\n'
-                        '• 数据加密传输和存储\n'
-                        '• 访问控制和权限管理\n'
-                        '• 定期安全审计\n'
-                        '• 员工隐私培训',
-                      ),
-                      _buildPolicyPoint(
-                        '5. 用户权利',
-                        '您有权：\n'
-                        '• 访问和更新您的个人信息\n'
-                        '• 删除您的账户和数据\n'
-                        '• 撤回同意\n'
-                        '• 数据可携带\n'
-                        '• 投诉和申诉',
-                      ),
-                      _buildPolicyPoint(
-                        '6. 第三方服务',
-                        '我们的应用可能包含第三方服务的链接。这些第三方有自己的隐私政策，我们不对其隐私做法负责。建议您仔细阅读第三方的隐私政策。',
-                      ),
-                      _buildPolicyPoint(
-                        '7. 政策更新',
-                        '我们可能会不时更新本隐私政策。重大变更时，我们会通过应用内通知或其他方式告知您。继续使用应用即表示您接受更新后的政策。',
-                      ),
-                      _buildPolicyPoint(
-                        '8. 联系我们',
-                        '如果您对本隐私政策有任何疑问或建议，请通过以下方式联系我们：\n'
-                        '• 邮箱：privacy@dreamrecorder.com\n'
-                        '• 地址：中国北京市朝阳区xxx街道xxx号',
-                      ),
+                      // 动态生成所有政策章节
+                      ...PrivacyPolicyContent.sections.map((section) => 
+                        _buildPolicyPoint(section.title, section.content)
+                      ).toList(),
                       const SizedBox(height: 16),
                       const Text(
-                        '继续使用表示您同意我们的隐私政策。如不同意，应用将退出。',
+                        PrivacyPolicyContent.bottomNotice,
                         style: TextStyle(
                           color: Colors.orange,
                           fontSize: 13,
