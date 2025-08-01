@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/dream_models.dart';
 import '../utills/env.dart';
@@ -27,6 +28,16 @@ class ApiService {
         'Accept': 'application/json',
       },
     ));
+
+    // 配置HTTPS证书处理（Dio 5.x）
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      onHttpClientCreate: (client) {
+        client.badCertificateCallback = (cert, host, port) {
+          return true; // 接受所有证书（仅用于开发环境）
+        };
+        return client;
+      },
+    );
 
     // 添加请求拦截器，自动添加认证头和处理token刷新
     _dio.interceptors.add(InterceptorsWrapper(

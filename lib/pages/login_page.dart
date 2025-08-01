@@ -268,7 +268,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _loginUsernameController,
-            label: '用户名',
+            label: '用户名/手机号/邮箱',
             icon: Icons.person_outline,
           ),
           const SizedBox(height: 16),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/foreground_service.dart';
 
 class MeditationPage extends StatefulWidget {
   const MeditationPage({super.key});
@@ -50,16 +51,28 @@ class _MeditationPageState extends State<MeditationPage>
       parent: _rippleController,
       curve: Curves.easeOut,
     ));
+    
+    // 初始化前台服务
+    _initializeForegroundService();
   }
   
   @override
   void dispose() {
     _breathingController.dispose();
     _rippleController.dispose();
+    // 停止前台服务
+    ForegroundServiceManager.stopMeditationTimer();
     super.dispose();
   }
   
-  void _startMeditation() {
+  // 初始化前台服务
+  Future<void> _initializeForegroundService() async {
+    await ForegroundServiceManager.initialize();
+    // 请求必要权限
+    await ForegroundServiceManager.requestPermissions();
+  }
+  
+  void _startMeditation() async {
     setState(() {
       _isPlaying = true;
       _remainingTime = _duration * 60; // 转换为秒
@@ -68,11 +81,44 @@ class _MeditationPageState extends State<MeditationPage>
     _breathingController.repeat(reverse: true);
     _rippleController.repeat();
     
-    // 倒计时
-    _startCountdown();
+    print('开始冥想，时长: $_remainingTime 秒');
+    
+    // 启动前台服务计时器
+    final success = await ForegroundServiceManager.startMeditationTimer(_remainingTime);
+    
+    if (!success) {
+      // 如果前台服务启动失败，回退到原来的计时方式
+      print('前台服务启动失败，使用本地计时器');
+      _startCountdown();
+    } else {
+      print('前台服务启动成功');
+      
+      // 前台服务启动成功后，设置数据监听器
+      print('设置前台服务数据监听器');
+      ForegroundServiceManager.listenToForegroundService((data) {
+        print('收到前台服务数据: $data');
+        if (data is Map<String, dynamic>) {
+          switch (data['type']) {
+            case 'timer_update':
+              if (mounted) {
+                setState(() {
+                  _remainingTime = data['remainingTime'] ?? 0;
+                });
+                print('更新剩余时间: $_remainingTime');
+              }
+              break;
+            case 'timer_completed':
+              if (mounted) {
+                _stopMeditation();
+              }
+              break;
+          }
+        }
+      });
+    }
   }
   
-  void _stopMeditation() {
+  void _stopMeditation() async {
     setState(() {
       _isPlaying = false;
       _remainingTime = 0;
@@ -80,6 +126,9 @@ class _MeditationPageState extends State<MeditationPage>
     
     _breathingController.stop();
     _rippleController.stop();
+    
+    // 停止前台服务
+    await ForegroundServiceManager.stopMeditationTimer();
   }
   
   void _startCountdown() {

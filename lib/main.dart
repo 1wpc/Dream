@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../utills/env.dart';
 import 'pages/main_container_page.dart';
 import 'pages/login_page.dart';
@@ -16,6 +17,9 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化前台服务通信端口
+  FlutterForegroundTask.initCommunicationPort();
   
   // 初始化API服务
   try {
