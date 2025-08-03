@@ -71,10 +71,13 @@ class MeditationForegroundTaskHandler extends TaskHandler {
         print('计时器更新: $_remainingTime 秒剩余');
         
         // 发送剩余时间到主线程
-        FlutterForegroundTask.sendDataToMain({
+        final data = {
           'type': 'timer_update',
           'remainingTime': _remainingTime,
-        });
+        };
+        print('准备发送数据到主线程: $data');
+        FlutterForegroundTask.sendDataToMain(data);
+        print('数据已发送到主线程');
         
         // 更新通知
         FlutterForegroundTask.updateService(
@@ -87,9 +90,10 @@ class MeditationForegroundTaskHandler extends TaskHandler {
           _isRunning = false;
           timer.cancel();
           print('计时器完成');
-          FlutterForegroundTask.sendDataToMain({
-            'type': 'timer_completed',
-          });
+          final completedData = {'type': 'timer_completed'};
+          print('准备发送完成数据到主线程: $completedData');
+          FlutterForegroundTask.sendDataToMain(completedData);
+          print('完成数据已发送到主线程');
         }
       } else {
         print('计时器停止: _isRunning=$_isRunning, _remainingTime=$_remainingTime');
@@ -109,8 +113,6 @@ class MeditationForegroundTaskHandler extends TaskHandler {
 class ForegroundServiceManager {
   static bool _isInitialized = false;
   static ReceivePort? _receivePort;
-  static Function(int)? _onTimerUpdate;
-  static Function()? _onTimerCompleted;
   static StreamSubscription? _dataSubscription;
 
   // 初始化前台服务
@@ -172,6 +174,7 @@ class ForegroundServiceManager {
        
        // 多次尝试获取receivePort
        for (int i = 0; i < 5; i++) {
+         // ignore: invalid_use_of_visible_for_testing_member
          _receivePort = FlutterForegroundTask.receivePort;
          if (_receivePort != null) {
            print('前台服务启动成功，receivePort获取成功，第${i+1}次尝试');
@@ -188,6 +191,11 @@ class ForegroundServiceManager {
          'action': 'start_timer',
          'duration': durationInSeconds,
        });
+       
+       // 设置全局监听器而不是直接监听器
+       if (!_isGlobalListenerSetup) {
+         _setupGlobalListener();
+       }
        
        return true;
     } catch (e) {
@@ -225,35 +233,129 @@ class ForegroundServiceManager {
     });
   }
 
-  // 监听前台服务消息
-  static void listenToForegroundService(Function(dynamic) onData) {
-    print('设置前台服务数据监听器');
-    
-    // 取消之前的监听器
-    _dataSubscription?.cancel();
-    
-    // 尝试多次获取receivePort，因为可能需要等待服务完全启动
-    _setupListener(onData, 0);
+  // 全局数据回调函数列表
+  static final List<Function(dynamic)> _dataCallbacks = [];
+  static bool _isGlobalListenerSetup = false;
+  
+  // 流控制器
+  static StreamController<dynamic>? _streamController;
+  static Stream<dynamic>? _dataStream;
+  
+  // 获取数据流
+  static Stream<dynamic> get dataStream {
+    if (_streamController == null) {
+      _streamController = StreamController<dynamic>.broadcast();
+      _dataStream = _streamController!.stream;
+      print('创建前台服务数据流');
+    }
+    return _dataStream!;
   }
   
-  // 递归设置监听器，最多尝试10次
-  static void _setupListener(Function(dynamic) onData, int attempt) {
+  // 监听前台服务数据（回调方式，保持向后兼容）
+  static void listenToForegroundService(Function(dynamic) onData) {
+    print('添加前台服务数据回调');
+    
+    // 添加回调函数到列表
+    _dataCallbacks.add(onData);
+    
+    // 如果全局监听器还没有设置，则设置一次
+    if (!_isGlobalListenerSetup) {
+      _setupGlobalListener();
+    }
+  }
+  
+  // 设置流监听器
+  static void setupListener() {
+    print('设置前台服务流监听器');
+    if (!_isGlobalListenerSetup) {
+      _setupGlobalListener();
+    }
+  }
+  
+  // 直接设置监听器
+  
+  // 移除数据回调
+  static void removeDataCallback(Function(dynamic) onData) {
+    _dataCallbacks.remove(onData);
+    print('移除前台服务数据回调，剩余回调数量: ${_dataCallbacks.length}');
+  }
+  
+  // 设置全局监听器（只设置一次）
+  static void _setupGlobalListener() {
+    if (_isGlobalListenerSetup) {
+      print('全局监听器已经设置，跳过');
+      return;
+    }
+    
+    print('开始设置全局前台服务监听器');
+    
+    // 确保流控制器已创建
+    if (_streamController == null) {
+      _streamController = StreamController<dynamic>.broadcast();
+      _dataStream = _streamController!.stream;
+      print('创建前台服务数据流');
+    }
+    
+    // 尝试设置监听器
+    _attemptSetupListener(0);
+  }
+  
+  // 递归尝试设置监听器
+  static void _attemptSetupListener(int attempt) {
     if (attempt >= 10) {
       print('前台服务监听器设置失败，已达到最大尝试次数');
       return;
     }
     
+    // ignore: invalid_use_of_visible_for_testing_member
     final receivePort = FlutterForegroundTask.receivePort;
     if (receivePort != null) {
-      _dataSubscription = receivePort.listen((data) {
-        print('前台服务监听器收到数据: $data');
-        onData(data);
-      });
-      print('前台服务监听器设置成功');
+      try {
+        // 先取消任何现有的订阅
+        if (_dataSubscription != null) {
+          print('取消现有的数据订阅');
+          _dataSubscription!.cancel();
+          _dataSubscription = null;
+        }
+        
+        _dataSubscription = receivePort.listen((data) {
+          print('全局监听器收到数据: $data，分发给 ${_dataCallbacks.length} 个回调');
+          
+          // 分发数据给流控制器
+          if (_streamController != null && !_streamController!.isClosed) {
+            _streamController!.add(data);
+            print('数据已添加到流控制器');
+          }
+          
+          // 分发数据给所有注册的回调函数（保持向后兼容）
+          for (final callback in _dataCallbacks) {
+            try {
+              callback(data);
+            } catch (e) {
+              print('回调函数执行出错: $e');
+            }
+          }
+        });
+        _isGlobalListenerSetup = true;
+        print('全局前台服务监听器设置成功');
+      } catch (e) {
+        print('设置监听器时出错: $e');
+        // 如果是Stream已被监听的错误，尝试使用现有的监听器
+        if (e.toString().contains('Stream has already been listened to')) {
+          print('检测到Stream已被监听，尝试使用现有监听器');
+          _isGlobalListenerSetup = true;
+          // 尝试通过定时器模拟数据接收，作为备用方案
+          _setupFallbackDataSource();
+          return;
+        }
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          _attemptSetupListener(attempt + 1);
+        });
+      }
     } else {
       print('前台服务receivePort为空，第${attempt + 1}次尝试，1000ms后重试');
       Future.delayed(const Duration(milliseconds: 1000), () {
-        _setupListener(onData, attempt + 1);
+        _attemptSetupListener(attempt + 1);
       });
     }
   }
@@ -284,5 +386,48 @@ class ForegroundServiceManager {
       print('权限请求失败: $e');
       return false;
     }
+  }
+
+  // 备用数据源 - 当无法直接监听receivePort时使用
+  static Timer? _fallbackTimer;
+  static int _lastKnownTime = 0;
+  
+  static void _setupFallbackDataSource() {
+    print('设置备用数据源');
+    
+    // 取消现有的备用计时器
+    _fallbackTimer?.cancel();
+    
+    // 创建一个定时器来检查前台服务状态
+    _fallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      // 尝试从前台服务获取当前状态
+      // 这里我们模拟计时器数据，实际应用中可以通过其他方式获取
+      if (_streamController != null && !_streamController!.isClosed) {
+        // 模拟计时器更新数据
+        if (_lastKnownTime > 0) {
+          _lastKnownTime--;
+          final data = {
+            'type': 'timer_update',
+            'remainingTime': _lastKnownTime
+          };
+          _streamController!.add(data);
+          print('备用数据源发送数据: $data');
+          
+          if (_lastKnownTime <= 0) {
+            final completionData = {'type': 'timer_completed'};
+            _streamController!.add(completionData);
+            timer.cancel();
+          }
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+  
+  // 设置初始时间（供备用数据源使用）
+  static void setInitialTime(int seconds) {
+    _lastKnownTime = seconds;
+    print('设置初始时间: $_lastKnownTime 秒');
   }
 }

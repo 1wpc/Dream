@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/foreground_service.dart';
@@ -19,6 +20,9 @@ class _MeditationPageState extends State<MeditationPage>
   bool _isPlaying = false;
   int _duration = 5; // 默认5分钟
   int _remainingTime = 0;
+  
+  // 流订阅
+  StreamSubscription<dynamic>? _dataSubscription;
   
   final List<int> _durations = [1, 3, 5, 10, 15, 30]; // 冥想时长选项（分钟）
   
@@ -60,6 +64,10 @@ class _MeditationPageState extends State<MeditationPage>
   void dispose() {
     _breathingController.dispose();
     _rippleController.dispose();
+    
+    // 取消流订阅
+    _dataSubscription?.cancel();
+    
     // 停止前台服务
     ForegroundServiceManager.stopMeditationTimer();
     super.dispose();
@@ -84,38 +92,59 @@ class _MeditationPageState extends State<MeditationPage>
     print('开始冥想，时长: $_remainingTime 秒');
     
     // 启动前台服务计时器
+    print('准备启动前台服务计时器，时长: $_remainingTime 秒');
+    // 设置初始时间供备用数据源使用
+    ForegroundServiceManager.setInitialTime(_remainingTime);
     final success = await ForegroundServiceManager.startMeditationTimer(_remainingTime);
+    print('前台服务启动结果: $success');
     
     if (!success) {
       // 如果前台服务启动失败，回退到原来的计时方式
       print('前台服务启动失败，使用本地计时器');
       _startCountdown();
     } else {
-      print('前台服务启动成功');
-      
-      // 前台服务启动成功后，设置数据监听器
-      print('设置前台服务数据监听器');
-      ForegroundServiceManager.listenToForegroundService((data) {
+      print('前台服务启动成功，开始设置监听器');
+      _setupStreamListener();
+    }
+  }
+  
+  void _setupStreamListener() async {
+    print('设置前台服务流监听器');
+    // 首先调用setupListener确保全局监听器已设置
+    ForegroundServiceManager.setupListener();
+    
+    // 等待一段时间确保全局监听器设置完成
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    _dataSubscription = ForegroundServiceManager.dataStream.listen(
+      (data) {
         print('收到前台服务数据: $data');
         if (data is Map<String, dynamic>) {
           switch (data['type']) {
             case 'timer_update':
+              final remainingTime = data['remainingTime'] as int;
               if (mounted) {
                 setState(() {
-                  _remainingTime = data['remainingTime'] ?? 0;
+                  _remainingTime = remainingTime;
                 });
-                print('更新剩余时间: $_remainingTime');
+                print('UI更新: 剩余时间 $remainingTime 秒');
               }
               break;
             case 'timer_completed':
               if (mounted) {
                 _stopMeditation();
+                _showCompletionDialog();
+                print('冥想完成');
               }
               break;
           }
         }
-      });
-    }
+      },
+      onError: (error) {
+        print('前台服务数据流错误: $error');
+      },
+    );
+    print('UI流监听器设置完成');
   }
   
   void _stopMeditation() async {
