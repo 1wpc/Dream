@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/foreground_service.dart';
+import 'dream_style_selection_page.dart';
+import 'smart_meditation_page.dart';
 
 class MeditationPage extends StatefulWidget {
   const MeditationPage({super.key});
@@ -14,15 +14,9 @@ class _MeditationPageState extends State<MeditationPage>
     with TickerProviderStateMixin {
   late AnimationController _breathingController;
   late AnimationController _rippleController;
-  late Animation<double> _breathingAnimation;
-  late Animation<double> _rippleAnimation;
   
-  bool _isPlaying = false;
   int _duration = 5; // 默认5分钟
-  int _remainingTime = 0;
-  
-  // 流订阅
-  StreamSubscription<dynamic>? _dataSubscription;
+  DreamStyle? _selectedStyle; // 选择的风格
   
   final List<int> _durations = [1, 3, 5, 10, 15, 30]; // 冥想时长选项（分钟）
   
@@ -40,180 +34,58 @@ class _MeditationPageState extends State<MeditationPage>
       vsync: this,
     );
     
-    _breathingAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
-    ));
     
-    _rippleAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _rippleController,
-      curve: Curves.easeOut,
-    ));
     
-    // 初始化前台服务
-    _initializeForegroundService();
+    // 启动呼吸动画
+    _breathingController.repeat(reverse: true);
+    
+    // 启动涟漪动画
+    _rippleController.repeat();
   }
   
   @override
   void dispose() {
     _breathingController.dispose();
     _rippleController.dispose();
-    
-    // 取消流订阅
-    _dataSubscription?.cancel();
-    
-    // 停止前台服务
-    ForegroundServiceManager.stopMeditationTimer();
     super.dispose();
   }
   
-  // 初始化前台服务
-  Future<void> _initializeForegroundService() async {
-    await ForegroundServiceManager.initialize();
-    // 请求必要权限
-    await ForegroundServiceManager.requestPermissions();
-  }
-  
   void _startMeditation() async {
-    setState(() {
-      _isPlaying = true;
-      _remainingTime = _duration * 60; // 转换为秒
-    });
-    
-    _breathingController.repeat(reverse: true);
-    _rippleController.repeat();
-    
-    print('开始冥想，时长: $_remainingTime 秒');
-    
-    // 启动前台服务计时器
-    print('准备启动前台服务计时器，时长: $_remainingTime 秒');
-    // 设置初始时间供备用数据源使用
-    ForegroundServiceManager.setInitialTime(_remainingTime);
-    final success = await ForegroundServiceManager.startMeditationTimer(_remainingTime);
-    print('前台服务启动结果: $success');
-    
-    if (!success) {
-      // 如果前台服务启动失败，回退到原来的计时方式
-      print('前台服务启动失败，使用本地计时器');
-      _startCountdown();
-    } else {
-      print('前台服务启动成功，开始设置监听器');
-      _setupStreamListener();
+    if (_selectedStyle == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请先选择冥想风格'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
     }
-  }
-  
-  void _setupStreamListener() async {
-    print('设置前台服务流监听器');
-    // 首先调用setupListener确保全局监听器已设置
-    ForegroundServiceManager.setupListener();
     
-    // 等待一段时间确保全局监听器设置完成
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    _dataSubscription = ForegroundServiceManager.dataStream.listen(
-      (data) {
-        print('收到前台服务数据: $data');
-        if (data is Map<String, dynamic>) {
-          switch (data['type']) {
-            case 'timer_update':
-              final remainingTime = data['remainingTime'] as int;
-              if (mounted) {
-                setState(() {
-                  _remainingTime = remainingTime;
-                });
-                print('UI更新: 剩余时间 $remainingTime 秒');
-              }
-              break;
-            case 'timer_completed':
-              if (mounted) {
-                _stopMeditation();
-                _showCompletionDialog();
-                print('冥想完成');
-              }
-              break;
-          }
-        }
-      },
-      onError: (error) {
-        print('前台服务数据流错误: $error');
-      },
-    );
-    print('UI流监听器设置完成');
-  }
-  
-  void _stopMeditation() async {
-    setState(() {
-      _isPlaying = false;
-      _remainingTime = 0;
-    });
-    
-    _breathingController.stop();
-    _rippleController.stop();
-    
-    // 停止前台服务
-    await ForegroundServiceManager.stopMeditationTimer();
-  }
-  
-  void _startCountdown() {
-    if (_remainingTime > 0 && _isPlaying) {
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted && _isPlaying) {
-          setState(() {
-            _remainingTime--;
-          });
-          if (_remainingTime > 0) {
-            _startCountdown();
-          } else {
-            _stopMeditation();
-            _showCompletionDialog();
-          }
-        }
-      });
-    }
-  }
-  
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1c2e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+    // 导航到智能冥想页面
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SmartMeditationPage(
+          duration: _duration,
+          dreamStyle: _selectedStyle!,
         ),
-        title: const Text(
-          '🧘‍♀️ 冥想完成',
-          style: TextStyle(color: Colors.white),
-          textAlign: TextAlign.center,
-        ),
-        content: const Text(
-          '恭喜你完成了这次冥想练习！\n愿你内心平静，身心愉悦。',
-          style: TextStyle(color: Colors.white70),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              '确定',
-              style: TextStyle(color: Color(0xFF8B9AFF)),
-            ),
-          ),
-        ],
       ),
     );
   }
   
-  String _formatTime(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  void _selectStyle() async {
+    final result = await Navigator.of(context).push<DreamStyle>(
+      MaterialPageRoute(
+        builder: (context) => const DreamStyleSelectionPage(),
+      ),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _selectedStyle = result;
+      });
+    }
   }
+
   
   @override
   Widget build(BuildContext context) {
@@ -227,316 +99,269 @@ class _MeditationPageState extends State<MeditationPage>
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFF1a1c2e),
-              Color(0xFF2d1b69),
-              Color(0xFF11001a),
+              Color(0xFF16213e),
+              Color(0xFF0f3460),
             ],
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // 顶部导航
-                Row(
+          child: Column(
+            children: [
+              // 顶部导航
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
                   children: [
                     IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        Icons.arrow_back_ios,
-                        color: Colors.white,
-                      ),
                     ),
                     const Expanded(
                       child: Text(
-                        '冥想',
+                        '智能冥想',
                         style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(width: 48), // 平衡布局
+                    const SizedBox(width: 48), // 平衡左侧的返回按钮
                   ],
                 ),
-                
-                const SizedBox(height: 40),
-                
-                // 主要内容区域
-                Expanded(
-                  child: _isPlaying ? _buildMeditationView() : _buildSetupView(),
+              ),
+              
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 标题
+                      const Text(
+                        '开启你的智能冥想之旅',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      const Text(
+                        '选择时长和风格，享受AI生成的沉浸式冥想体验',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      
+                      const SizedBox(height: 60),
+                      
+                      // 时长选择
+                      const Text(
+                        '选择冥想时长',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.center,
+                        children: _durations.map((duration) {
+                          final isSelected = _duration == duration;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _duration = duration;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? Colors.white.withOpacity(0.2)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: isSelected 
+                                      ? Colors.white
+                                      : Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: Text(
+                                '${duration}分钟',
+                                style: TextStyle(
+                                  color: isSelected 
+                                      ? Colors.white
+                                      : Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: isSelected 
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      
+                      const SizedBox(height: 50),
+                      
+                      // 风格选择
+                      const Text(
+                        '选择冥想风格',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      GestureDetector(
+                        onTap: _selectStyle,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: _selectedStyle != null 
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: _selectedStyle != null 
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Row(
+                            children: [
+                              if (_selectedStyle != null) ...[
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: _selectedStyle!.gradient,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    _selectedStyle!.icon,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _selectedStyle!.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _selectedStyle!.description,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else ...[
+                                const Icon(
+                                  Icons.palette_outlined,
+                                  color: Colors.white70,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Text(
+                                    '点击选择冥想风格',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 60),
+                      
+                      // 开始按钮
+                      GestureDetector(
+                        onTap: _startMeditation,
+                        child: Container(
+                          width: 200,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF8B9AFF),
+                                Color(0xFF6C7CE7),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF8B9AFF).withOpacity(0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '开始冥想',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
   
-  Widget _buildSetupView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 冥想图标
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF8B9AFF).withOpacity(0.3),
-                const Color(0xFF6B73FF).withOpacity(0.1),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 2,
-            ),
-          ),
-          child: const Icon(
-            Icons.self_improvement,
-            size: 60,
-            color: Colors.white,
-          ),
-        ),
-        
-        const SizedBox(height: 40),
-        
-        // 标题和描述
-        const Text(
-          '开始冥想',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        Text(
-          '选择冥想时长，让心灵得到宁静',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.white.withOpacity(0.7),
-          ),
-          textAlign: TextAlign.center,
-        ),
-        
-        const SizedBox(height: 60),
-        
-        // 时长选择
-        const Text(
-          '选择时长',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        
-        const SizedBox(height: 20),
-        
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _durations.map((duration) {
-            final isSelected = _duration == duration;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _duration = duration;
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF8B9AFF)
-                      : Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF8B9AFF)
-                        : Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '${duration}分钟',
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        
-        const SizedBox(height: 60),
-        
-        // 开始按钮
-        GestureDetector(
-          onTap: _startMeditation,
-          child: Container(
-            width: 200,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B9AFF), Color(0xFF6B73FF)],
-              ),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF8B9AFF).withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text(
-                '开始冥想',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildMeditationView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 倒计时显示
-        Text(
-          _formatTime(_remainingTime),
-          style: const TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        
-        const SizedBox(height: 60),
-        
-        // 呼吸引导圆圈
-        AnimatedBuilder(
-          animation: _breathingAnimation,
-          builder: (context, child) {
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                // 外层涟漪效果
-                AnimatedBuilder(
-                  animation: _rippleAnimation,
-                  builder: (context, child) {
-                    return Container(
-                      width: 300 * _rippleAnimation.value,
-                      height: 300 * _rippleAnimation.value,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3 * (1 - _rippleAnimation.value)),
-                          width: 2,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                
-                // 主呼吸圆圈
-                Container(
-                  width: 200 * _breathingAnimation.value,
-                  height: 200 * _breathingAnimation.value,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFF8B9AFF).withOpacity(0.6),
-                        const Color(0xFF6B73FF).withOpacity(0.2),
-                        Colors.transparent,
-                      ],
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.5),
-                      width: 2,
-                    ),
-                  ),
-                ),
-                
-                // 中心图标
-                const Icon(
-                  Icons.self_improvement,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ],
-            );
-          },
-        ),
-        
-        const SizedBox(height: 60),
-        
-        // 呼吸指导文字
-        AnimatedBuilder(
-          animation: _breathingController,
-          builder: (context, child) {
-            final isInhaling = _breathingController.value < 0.5;
-            return Text(
-              isInhaling ? '深呼吸...' : '慢慢呼出...',
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.white.withOpacity(0.8),
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          },
-        ),
-        
-        const SizedBox(height: 80),
-        
-        // 停止按钮
-        GestureDetector(
-          onTap: _stopMeditation,
-          child: Container(
-            width: 120,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: const Center(
-              child: Text(
-                '停止',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

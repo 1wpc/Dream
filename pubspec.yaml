@@ -132,8 +132,6 @@ flutter:
 
   assets:
     - assets/videos/
-    - assets/videos/background.mp4
     - assets/images/
-    - assets/images/dream_background.jpg
     - assets/audio/
     - assets/audio/dream_music.mp3

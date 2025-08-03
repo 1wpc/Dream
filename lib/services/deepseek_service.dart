@@ -162,6 +162,40 @@ class DeepSeekService {
     return generateInspirationStream();
   }
 
+  // 生成冥想场景 - 流式输出版本
+  static Stream<String> generateMeditationSceneStream({
+    String? styleKeywords,
+    String? styleName,
+    String? styleDescription,
+  }) async* {
+    final dio = ApiService.dio;
+    try {
+      final response = await dio.post<ResponseBody>(
+        _chatPath,
+        data: _buildMeditationScenePayload(
+          styleKeywords: styleKeywords,
+          styleName: styleName,
+          styleDescription: styleDescription,
+          stream: true,
+        ),
+        options: Options(responseType: ResponseType.stream),
+      );
+
+      if (response.statusCode == 200) {
+        final stream = response.data!.stream.cast<List<int>>().transform(utf8.decoder);
+        await for (final chunk in stream) {
+          if (chunk.isNotEmpty) {
+            yield chunk;
+          }
+        }
+      } else {
+        throw Exception('API请求失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('生成冥想场景失败: $e');
+    }
+  }
+
   // ----------------- 私有辅助方法 -----------------
 
   static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords, {required bool stream}) {
@@ -295,7 +329,34 @@ class DeepSeekService {
     };
   }
 
+  static Map<String, dynamic> _buildMeditationScenePayload({
+    String? styleKeywords,
+    String? styleName,
+    String? styleDescription,
+    required bool stream,
+  }) {
+    final stylePrompt = styleName != null
+        ? '请特别注意生成${styleName}风格的冥想场景。'
+        : '';
 
+    return {
+      'model': 'deepseek-chat',
+      'messages': [
+        {
+          'role': 'system',
+          'content': _meditationSceneSystemPrompt(stylePrompt, styleKeywords, styleDescription),
+        },
+        {
+          'role': 'user',
+          'content': styleName != null
+              ? '请为我生成一个${styleName}风格的冥想场景内容。'
+              : '请为我生成一个冥想场景内容。',
+        }
+      ],
+      'stream': stream,
+      'temperature': 0.8,
+    };
+  }
 
   // ----------------- Prompt 模板 -----------------
 
@@ -437,4 +498,43 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 - 让人看到就想立刻行动
 
 请直接输出一句简短的灵感建议，必须包含Emoji表情，不需要任何其他格式标记或解释。''';
+
+  static String _meditationSceneSystemPrompt(String stylePrompt, String? styleKeywords, String? styleDescription) =>
+      '''你是一位专业的冥想引导师，需要为用户生成冥想场景的引导内容和图片描述。
+$stylePrompt
+
+请严格按照以下JSON格式输出，不要有任何其他文字：
+{
+  "text": "冥想引导文字",
+  "image_prompt": "图片描述"
+}
+
+冥想引导文字要求：
+1. 用中文描述
+2. 长度控制在50字左右
+3. 语言要平静、舒缓、富有诗意
+4. 能够帮助用户放松身心，进入冥想状态
+5. 要体现当下的觉察和内心的宁静
+${styleKeywords != null ? '6. 要融入$styleKeywords的风格特征' : ''}
+${styleDescription != null ? '7. 要体现$styleDescription的氛围' : ''}
+
+图片描述要求：
+1. 必须用英文描述
+2. 要精确描述冥想场景的每个细节
+3. 包含以下要素：
+   - 场景类型（如：forest, mountain, ocean, garden等）
+   - 时间（如：sunset, dawn, twilight等）
+   - 天气和光线（如：soft light, golden hour, misty等）
+   - 主要元素和氛围
+   - 色彩搭配
+4. 使用逗号分隔各个要素
+5. 要营造宁静、祥和的冥想氛围
+${styleKeywords != null ? '6. 必须体现$styleKeywords的视觉风格' : ''}
+${styleDescription != null ? '7. 要符合$styleDescription的美学特征' : ''}
+
+示例格式：
+{
+  "text": "深深吸气，感受内心的宁静如湖水般清澈，让思绪如云朵般轻柔飘过，在这一刻，你与宇宙的能量完美融合。",
+  "image_prompt": "serene mountain lake at sunset, soft golden light, misty atmosphere, peaceful meditation spot, lotus flowers, gentle ripples, warm colors, tranquil nature scene, spiritual ambiance"
+}''';
 }

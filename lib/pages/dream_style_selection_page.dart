@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'daydream_page.dart';
 
 class DreamStyleSelectionPage extends StatelessWidget {
   const DreamStyleSelectionPage({super.key});
@@ -157,14 +156,9 @@ class DreamStyleSelectionPage extends StatelessWidget {
             ),
           );
           
-          // 延迟跳转，让用户看到反馈
+          // 延迟返回选择的风格
           Future.delayed(const Duration(milliseconds: 500), () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DaydreamPage(dreamStyle: style),
-              ),
-            );
+            Navigator.pop(context, style);
           });
         },
         borderRadius: BorderRadius.circular(20),
@@ -245,4 +239,4 @@ class DreamStyle {
     required this.gradient,
     required this.keywords,
   });
-} 
+}

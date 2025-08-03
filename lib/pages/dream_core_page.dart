@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dream_style_selection_page.dart';
 import 'dream_record_page.dart';
 import 'zhougong_dream_page.dart';
 import 'meditation_page.dart';
@@ -23,13 +22,6 @@ class _DreamCorePageState extends State<DreamCorePage>
 
   final List<FeatureItem> _features = [
     FeatureItem(
-      title: '白日梦',
-      subtitle: 'AI编织梦境',
-      icon: Icons.auto_awesome,
-      gradient: [Color(0xFF667eea), Color(0xFF764ba2)],
-      page: () => const DreamStyleSelectionPage(),
-    ),
-    FeatureItem(
       title: '记录梦',
       subtitle: '珍藏美梦',
       icon: Icons.nights_stay,
@@ -44,13 +36,12 @@ class _DreamCorePageState extends State<DreamCorePage>
       page: () => const ZhougongDreamPage(),
     ),
     FeatureItem(
-      title: '冥想',
-      subtitle: '静心养神',
+      title: '智能冥想',
+      subtitle: 'AI引导冥想',
       icon: Icons.self_improvement,
       gradient: [Color(0xFF667eea), Color(0xFF764ba2)],
       page: () => const MeditationPage(),
     ),
-
   ];
 
   @override
@@ -295,29 +286,47 @@ class _DreamCorePageState extends State<DreamCorePage>
     return AnimatedBuilder(
       animation: _cardAnimation,
       builder: (context, child) {
-        return GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 20,
-            crossAxisSpacing: 20,
-            childAspectRatio: 0.85,
-          ),
-          itemCount: _features.length,
-          itemBuilder: (context, index) {
-            final delay = index * 0.1;
-            final animation = Tween<double>(
-              begin: 0,
-              end: 1,
-            ).animate(CurvedAnimation(
-              parent: _cardController,
-              curve: Interval(delay, 1.0, curve: Curves.elasticOut),
-            ));
-            
-            return Transform.scale(
-              scale: animation.value,
-              child: _buildFeatureCard(_features[index], index),
-            );
-          },
+        // 三个模块的布局：第一行两个，第二行一个居中
+        return Column(
+          children: [
+            // 第一行：两个卡片
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Transform.scale(
+                      scale: _cardAnimation.value,
+                      child: _buildFeatureCard(_features[0], 0),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Transform.scale(
+                      scale: _cardAnimation.value,
+                      child: _buildFeatureCard(_features[1], 1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // 第二行：一个居中的卡片
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(flex: 1, child: Container()),
+                  Expanded(
+                    flex: 2,
+                    child: Transform.scale(
+                      scale: _cardAnimation.value,
+                      child: _buildFeatureCard(_features[2], 2),
+                    ),
+                  ),
+                  Expanded(flex: 1, child: Container()),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
