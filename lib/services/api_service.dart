@@ -167,14 +167,28 @@ class ApiService {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 422) {
-        // 验证错误
         final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('注册失败: $errorMessages', 422);
+        if (errors.isNotEmpty) {
+          final firstError = errors[0]['msg'] ?? '';
+          if (firstError.contains('username')) {
+            throw ApiException('用户名已存在', 422);
+          } else if (firstError.contains('email')) {
+            throw ApiException('邮箱已被注册', 422);
+          } else if (firstError.contains('phone')) {
+            throw ApiException('手机号已被注册', 422);
+          }
+        }
+        throw ApiException('注册信息有误', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('注册请求过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('注册失败: $e', null);
+      throw ApiException('注册失败', null);
     }
   }
 
@@ -200,13 +214,17 @@ class ApiService {
       if (e.response?.statusCode == 401) {
         throw ApiException('用户名或密码错误', 401);
       } else if (e.response?.statusCode == 422) {
-        final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('登录失败: $errorMessages', 422);
+        throw ApiException('用户名或密码错误', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('登录尝试过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('登录失败: $e', null);
+      throw ApiException('登录失败', null);
     }
   }
 
@@ -226,10 +244,16 @@ class ApiService {
       if (e.response?.statusCode == 401) {
         await clearToken();
         throw ApiException('登录已过期，请重新登录', 401);
+      } else if (e.response?.statusCode == 403) {
+        throw ApiException('权限不足', 403);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('获取用户信息失败: $e', null);
+      throw ApiException('获取用户信息失败', null);
     }
   }
 
@@ -257,12 +281,27 @@ class ApiService {
         throw ApiException('登录已过期，请重新登录', 401);
       } else if (e.response?.statusCode == 422) {
         final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('更新失败: $errorMessages', 422);
+        if (errors.isNotEmpty) {
+          final firstError = errors[0]['msg'] ?? '';
+          if (firstError.contains('nickname')) {
+            throw ApiException('昵称格式不正确', 422);
+          } else if (firstError.contains('email')) {
+            throw ApiException('邮箱格式不正确', 422);
+          } else if (firstError.contains('phone')) {
+            throw ApiException('手机号格式不正确', 422);
+          }
+        }
+        throw ApiException('输入信息格式不正确', 422);
+      } else if (e.response?.statusCode == 403) {
+        throw ApiException('权限不足', 403);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('更新用户信息失败: $e', null);
+      throw ApiException('更新用户资料失败', null);
     }
   }
 
@@ -285,12 +324,25 @@ class ApiService {
     } on DioException catch (e) {
       if (e.response?.statusCode == 422) {
         final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('发送验证码失败: $errorMessages', 422);
+        if (errors.isNotEmpty) {
+          final firstError = errors[0]['msg'] ?? '';
+          if (firstError.contains('email')) {
+            throw ApiException('邮箱格式不正确', 422);
+          } else if (firstError.contains('频繁') || firstError.contains('frequent')) {
+            throw ApiException('发送过于频繁，请稍后再试', 422);
+          }
+        }
+        throw ApiException('邮箱格式不正确', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('发送过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('发送验证码失败: $e', null);
+      throw ApiException('发送验证码失败', null);
     }
   }
 
@@ -311,14 +363,20 @@ class ApiService {
         throw ApiException('验证码验证失败', response.statusCode);
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 422) {
-        final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('验证码验证失败: $errorMessages', 422);
+      if (e.response?.statusCode == 401) {
+        throw ApiException('验证码错误或已过期', 401);
+      } else if (e.response?.statusCode == 422) {
+        throw ApiException('验证码格式不正确', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('验证尝试过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('验证码验证失败: $e', null);
+      throw ApiException('验证失败', null);
     }
   }
 
@@ -387,13 +445,17 @@ class ApiService {
       if (e.response?.statusCode == 401) {
         throw ApiException('邮箱或验证码错误', 401);
       } else if (e.response?.statusCode == 422) {
-        final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('登录失败: $errorMessages', 422);
+        throw ApiException('邮箱或验证码错误', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('登录尝试过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('登录失败: $e', null);
+      throw ApiException('登录失败', null);
     }
   }
 
@@ -416,12 +478,25 @@ class ApiService {
     } on DioException catch (e) {
       if (e.response?.statusCode == 422) {
         final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('发送短信验证码失败: $errorMessages', 422);
+        if (errors.isNotEmpty) {
+          final firstError = errors[0]['msg'] ?? '';
+          if (firstError.contains('phone')) {
+            throw ApiException('手机号格式不正确', 422);
+          } else if (firstError.contains('频繁') || firstError.contains('frequent')) {
+            throw ApiException('发送过于频繁，请稍后再试', 422);
+          }
+        }
+        throw ApiException('手机号格式不正确', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('发送过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('发送短信验证码失败: $e', null);
+      throw ApiException('发送验证码失败', null);
     }
   }
 
@@ -442,14 +517,20 @@ class ApiService {
         throw ApiException('短信验证码验证失败', response.statusCode);
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 422) {
-        final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('短信验证码验证失败: $errorMessages', 422);
+      if (e.response?.statusCode == 401) {
+        throw ApiException('验证码错误或已过期', 401);
+      } else if (e.response?.statusCode == 422) {
+        throw ApiException('验证码格式不正确', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('验证尝试过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('短信验证码验证失败: $e', null);
+      throw ApiException('验证失败', null);
     }
   }
 
@@ -475,13 +556,17 @@ class ApiService {
       if (e.response?.statusCode == 401) {
         throw ApiException('手机号或验证码错误', 401);
       } else if (e.response?.statusCode == 422) {
-        final errors = e.response?.data['detail'] ?? [];
-        final errorMessages = errors.map((error) => error['msg']).join(', ');
-        throw ApiException('手机号登录失败: $errorMessages', 422);
+        throw ApiException('手机号或验证码错误', 422);
+      } else if (e.response?.statusCode == 429) {
+        throw ApiException('登录尝试过于频繁，请稍后再试', 429);
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException('网络连接超时', e.response?.statusCode);
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw ApiException('网络连接失败', e.response?.statusCode);
       }
-      throw ApiException('网络错误: ${e.message}', e.response?.statusCode);
+      throw ApiException('网络错误', e.response?.statusCode);
     } catch (e) {
-      throw ApiException('手机号登录失败: $e', null);
+      throw ApiException('登录失败', null);
     }
   }
 
