@@ -71,6 +71,8 @@ dependencies:
   # 图片保存
   permission_handler: ^11.3.1
   gal: ^2.3.0
+
+  firebase_core: ^4.0.0
   
 tobias:
   url_scheme: dream

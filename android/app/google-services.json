@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "105840336181",
+    "project_id": "dream-96b28",
+    "storage_bucket": "dream-96b28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105840336181:android:53b28b858afd2f6e87c07c",
+        "android_client_info": {
+          "package_name": "top.neuronx.dream"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFHKiN8oEMM-ZTHHs379MN06dWFOapiDg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
