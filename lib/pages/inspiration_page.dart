@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/deepseek_service.dart';
 
 class InspirationPage extends StatefulWidget {
@@ -69,6 +70,13 @@ class _InspirationPageState extends State<InspirationPage>
       setState(() {
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.generateInspirationFailed),
+          ),
+        );
+      }
     }
   }
 
@@ -132,7 +140,7 @@ class _InspirationPageState extends State<InspirationPage>
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '灵感',
+                      AppLocalizations.of(context)!.inspirationTitle,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -172,7 +180,7 @@ class _InspirationPageState extends State<InspirationPage>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '左右滑动翻页，点击卡片获取新灵感',
+                      AppLocalizations.of(context)!.swipeToFlipClickForNew,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.6),
@@ -223,7 +231,7 @@ class _InspirationPageState extends State<InspirationPage>
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      '点击获取灵感',
+                      AppLocalizations.of(context)!.clickToGetInspiration,
                       style: TextStyle(
                         fontSize: 20,
                         color: Colors.white.withOpacity(0.9),
@@ -232,7 +240,7 @@ class _InspirationPageState extends State<InspirationPage>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '让创意的火花点亮你的思维',
+                      AppLocalizations.of(context)!.letCreativitySparkThinking,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withOpacity(0.7),
@@ -259,7 +267,7 @@ class _InspirationPageState extends State<InspirationPage>
             ),
             const SizedBox(height: 20),
             Text(
-              '正在生成灵感...',
+              AppLocalizations.of(context)!.generatingInspiration,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 16,
@@ -329,7 +337,7 @@ class _InspirationPageState extends State<InspirationPage>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '点击获取新灵感',
+                        AppLocalizations.of(context)!.generateNewInspiration,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.7),

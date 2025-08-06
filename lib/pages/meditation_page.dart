@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dream_style_selection_page.dart';
 import 'smart_meditation_page.dart';
 
@@ -53,8 +54,8 @@ class _MeditationPageState extends State<MeditationPage>
   void _startMeditation() async {
     if (_selectedStyle == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('请先选择冥想风格'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseSelectMeditationStyle),
           backgroundColor: Colors.orange,
         ),
       );
@@ -116,10 +117,10 @@ class _MeditationPageState extends State<MeditationPage>
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '智能冥想',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.smartMeditation,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -139,9 +140,9 @@ class _MeditationPageState extends State<MeditationPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // 标题
-                      const Text(
-                        '开启你的智能冥想之旅',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.startSmartMeditationJourney,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -151,9 +152,9 @@ class _MeditationPageState extends State<MeditationPage>
                       
                       const SizedBox(height: 12),
                       
-                      const Text(
-                        '选择时长和风格，享受AI生成的沉浸式冥想体验',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.selectDurationAndStyle,
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
                         ),
@@ -163,9 +164,9 @@ class _MeditationPageState extends State<MeditationPage>
                       const SizedBox(height: 60),
                       
                       // 时长选择
-                      const Text(
-                        '选择冥想时长',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.selectMeditationDuration,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
@@ -202,7 +203,7 @@ class _MeditationPageState extends State<MeditationPage>
                                 borderRadius: BorderRadius.circular(25),
                               ),
                               child: Text(
-                                '${duration}分钟',
+                                '${duration}${AppLocalizations.of(context)!.minutes}',
                                 style: TextStyle(
                                   color: isSelected 
                                       ? Colors.white
@@ -221,9 +222,9 @@ class _MeditationPageState extends State<MeditationPage>
                       const SizedBox(height: 50),
                       
                       // 风格选择
-                      const Text(
-                        '选择冥想风格',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.selectMeditationStyle,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
@@ -297,10 +298,10 @@ class _MeditationPageState extends State<MeditationPage>
                                   size: 24,
                                 ),
                                 const SizedBox(width: 16),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
-                                    '点击选择冥想风格',
-                                    style: TextStyle(
+                                    AppLocalizations.of(context)!.clickToSelectMeditationStyle,
+                                    style: const TextStyle(
                                       color: Colors.white70,
                                       fontSize: 16,
                                     ),
@@ -341,10 +342,10 @@ class _MeditationPageState extends State<MeditationPage>
                               ),
                             ],
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              '开始冥想',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!.startMeditation,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
+import '../services/language_service.dart';
 
 class PurchaseCreditsPage extends StatefulWidget {
   const PurchaseCreditsPage({super.key});
@@ -42,14 +44,14 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
           ),
         ),
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(color: Colors.white),
                     SizedBox(height: 16),
                     Text(
-                      '正在处理支付...',
+                      AppLocalizations.of(context)!.paymentProcessing,
                       style: TextStyle(color: Colors.white),
                     ),
                   ],
@@ -60,8 +62,8 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      '选择积分套餐',
+                    Text(
+                      AppLocalizations.of(context)!.selectCreditsPackage,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -188,7 +190,7 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('支付成功！已获得 ${result['credits']} 积分'),
+              content: Text(AppLocalizations.of(context)!.paymentSuccessCredits(result['credits'].toString())),
               backgroundColor: Colors.green,
             ),
           );
@@ -201,7 +203,7 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
         if (mounted && result != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? '支付失败'),
+              content: Text(result['message'] ?? AppLocalizations.of(context)!.paymentFailedMessage),
               backgroundColor: Colors.red,
             ),
           );
@@ -219,7 +221,7 @@ class _PurchaseCreditsPageState extends State<PurchaseCreditsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('支付过程中发生错误: $e'),
+            content: Text('${AppLocalizations.of(context)!.paymentErrorOccurred}: $e'),
             backgroundColor: Colors.red,
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -34,12 +35,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
       builder: (context) {
         final controller = TextEditingController(text: currentValue);
         return AlertDialog(
-          title: Text('编辑$title'),
+          title: Text(AppLocalizations.of(context)!.editFieldTitle(title)),
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
               labelText: title,
-              hintText: '请输入$title',
+              hintText: AppLocalizations.of(context)!.pleaseEnterField(title),
               border: const OutlineInputBorder(),
             ),
             maxLines: maxLines,
@@ -49,7 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -113,8 +114,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('更新成功'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.updateSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -124,7 +125,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('更新失败: $e'),
+            content: Text('${AppLocalizations.of(context)!.updateFailed}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -143,7 +144,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
-        title: const Text('编辑资料'),
+        title: Text(AppLocalizations.of(context)!.editProfileTitle),
         backgroundColor: const Color(0xFF16213E),
         foregroundColor: Colors.white,
       ),
@@ -235,10 +236,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             maxLength: 20,
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return '请输入昵称';
+                                return AppLocalizations.of(context)!.pleaseEnterNickname;
                               }
                               if (value.trim().length > 20) {
-                                return '昵称不能超过20个字符';
+                                return AppLocalizations.of(context)!.nicknameTooLong;
                               }
                               return null;
                             },
@@ -268,7 +269,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             maxLength: 100,
                             validator: (value) {
                               if (value != null && value.trim().length > 100) {
-                                return '个人简介不能超过100个字符';
+                                return AppLocalizations.of(context)!.bioTooLong;
                               }
                               return null;
                             },
@@ -295,7 +296,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             validator: (value) {
                               if (value != null && value.trim().isNotEmpty) {
                                 if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(value.trim())) {
-                                  return '请输入正确的手机号格式';
+                                  return AppLocalizations.of(context)!.pleaseEnterCorrectPhoneFormat;
                                 }
                               }
                               return null;

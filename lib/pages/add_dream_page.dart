@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/database_service.dart';
 import '../services/jimeng_service.dart';
@@ -36,7 +37,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
   Future<void> _generateImage() async {
     if (_contentController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先输入梦境内容')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseEnterDreamContent)),
       );
       return;
     }
@@ -61,7 +62,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('生成图片失败：$e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.generateImageFailed}：$e')),
         );
       }
     } finally {
@@ -93,13 +94,13 @@ class _AddDreamPageState extends State<AddDreamPage> {
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存成功')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.saveSuccess)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失败：$e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.saveFailed}：$e')),
         );
       }
     } finally {
@@ -127,9 +128,9 @@ class _AddDreamPageState extends State<AddDreamPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          '记录梦境',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.recordDream,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -138,9 +139,9 @@ class _AddDreamPageState extends State<AddDreamPage> {
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveDream,
-            child: const Text(
-              '保存',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.save,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
               ),
@@ -191,7 +192,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                             TextFormField(
                               controller: _titleController,
                               decoration: InputDecoration(
-                                hintText: '标题',
+                                hintText: AppLocalizations.of(context)!.title,
                                 hintStyle: const TextStyle(color: Colors.white70),
                                 filled: true,
                                 fillColor: Colors.white.withOpacity(0.08),
@@ -207,7 +208,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                               style: const TextStyle(color: Colors.white),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return '请输入标题';
+                                  return AppLocalizations.of(context)!.pleaseEnterTitle;
                                 }
                                 return null;
                               },
@@ -216,7 +217,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                             TextFormField(
                               controller: _contentController,
                               decoration: InputDecoration(
-                                hintText: '内容',
+                                hintText: AppLocalizations.of(context)!.content,
                                 hintStyle: const TextStyle(color: Colors.white70),
                                 filled: true,
                                 fillColor: Colors.white.withOpacity(0.08),
@@ -233,7 +234,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                               maxLines: 8,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return '请输入内容';
+                                  return AppLocalizations.of(context)!.pleaseEnterContent;
                                 }
                                 return null;
                               },
@@ -245,7 +246,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                                   child: ElevatedButton.icon(
                                     onPressed: _pickImage,
                                     icon: const Icon(Icons.photo_library),
-                                    label: const Text('选择图片'),
+                                    label: Text(AppLocalizations.of(context)!.selectImage),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue.shade800.withOpacity(0.8),
                                       foregroundColor: Colors.white,
@@ -262,7 +263,7 @@ class _AddDreamPageState extends State<AddDreamPage> {
                                   child: ElevatedButton.icon(
                                     onPressed: _generateImage,
                                     icon: const Icon(Icons.auto_awesome),
-                                    label: const Text('AI生成'),
+                                    label: Text(AppLocalizations.of(context)!.aiGenerate),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.purple.shade700.withOpacity(0.8),
                                       foregroundColor: Colors.white,
@@ -310,4 +311,4 @@ class _AddDreamPageState extends State<AddDreamPage> {
       ),
     );
   }
-} 
+}

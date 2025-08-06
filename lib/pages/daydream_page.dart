@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 // 加载期间显示的名言列表
 const List<String> _quotes = [
@@ -103,9 +105,9 @@ class _DaydreamPageState extends State<DaydreamPage> {
         }
       });
       
-      debugPrint('音频初始化成功');
+      debugPrint(AppLocalizations.of(context)!.audioInitSuccess);
     } catch (e) {
-      debugPrint('音频初始化失败: $e');
+      debugPrint('${AppLocalizations.of(context)!.audioInitFailed}: $e');
       setState(() {
         _isMusicLoaded = false;
       });
@@ -146,10 +148,10 @@ class _DaydreamPageState extends State<DaydreamPage> {
         );
       }
     } catch (e) {
-      debugPrint('音乐播放控制失败: $e');
+      debugPrint('${AppLocalizations.of(context)!.playbackFailed}: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🔇 播放失败: ${e.toString().contains('FileSystemException') ? '音频文件不存在' : '播放错误'}'),
+          content: Text('🔇 ${AppLocalizations.of(context)!.playbackFailed}: ${e.toString().contains('FileSystemException') ? AppLocalizations.of(context)!.audioFileNotExists : AppLocalizations.of(context)!.playbackError}'),
           duration: const Duration(seconds: 2),
           backgroundColor: Colors.red.shade600,
         ),
@@ -276,11 +278,11 @@ class _DaydreamPageState extends State<DaydreamPage> {
         }
       });
     } catch (e) {
-      debugPrint('初始化梦境失败: $e');
+      debugPrint('${AppLocalizations.of(context)!.initDreamFailed}: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('初始化梦境失败: $e'),
+            content: Text('${AppLocalizations.of(context)!.initDreamFailed}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -332,11 +334,11 @@ class _DaydreamPageState extends State<DaydreamPage> {
         _currentSceneIndex = _scenes.length - 1;
       });
     } catch (e) {
-      debugPrint('生成新场景失败: $e');
+      debugPrint('${AppLocalizations.of(context)!.generateNewSceneFailed}: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('生成新场景失败: $e'),
+            content: Text('${AppLocalizations.of(context)!.generateNewSceneFailed}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -380,20 +382,20 @@ class _DaydreamPageState extends State<DaydreamPage> {
         final hasAccessAfterRequest = await Gal.hasAccess();
         if (!hasAccessAfterRequest) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要相册权限才能保存图片'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.needAlbumPermission),
+            backgroundColor: Colors.red,
+          ),
+        );
           return;
         }
       }
       
       // 显示保存中提示
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('正在保存图片...'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.savingImage),
+          duration: const Duration(seconds: 1),
         ),
       );
       
@@ -417,20 +419,20 @@ class _DaydreamPageState extends State<DaydreamPage> {
         HapticFeedback.lightImpact();
         
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ 图片已保存到相册'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.imageSavedToAlbum),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
-        throw Exception('下载图片失败');
+        throw Exception(AppLocalizations.of(context)!.downloadImageFailed);
       }
     } catch (e) {
-      debugPrint('保存图片失败: $e');
+      debugPrint('${AppLocalizations.of(context)!.saveImageFailed}: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ 保存失败: $e'),
+          content: Text('${AppLocalizations.of(context)!.saveImageFailed}: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
         ),
@@ -451,17 +453,17 @@ class _DaydreamPageState extends State<DaydreamPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.save_alt,
                 color: Colors.white,
                 size: 24,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
-                '保存图片',
-                style: TextStyle(
+                AppLocalizations.of(context)!.saveImage,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -469,9 +471,9 @@ class _DaydreamPageState extends State<DaydreamPage> {
               ),
             ],
           ),
-          content: const Text(
-            '是否将当前梦境图片保存到相册？',
-            style: TextStyle(
+          content: Text(
+            AppLocalizations.of(context)!.saveImageConfirmMessage,
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 16,
             ),
@@ -479,9 +481,9 @@ class _DaydreamPageState extends State<DaydreamPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                '取消',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(
                   color: Colors.white60,
                   fontSize: 16,
                 ),
@@ -503,9 +505,9 @@ class _DaydreamPageState extends State<DaydreamPage> {
                   vertical: 10,
                 ),
               ),
-              child: const Text(
-                '保存',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.save,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -673,12 +675,12 @@ class _DaydreamPageState extends State<DaydreamPage> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 16),
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
                     Text(
-                      '正在编织新的梦境...',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.weavingNewDream,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                       ),

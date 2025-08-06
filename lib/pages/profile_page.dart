@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/points_service.dart';
 import '../services/database_service.dart';
+import '../services/language_service.dart';
 import 'login_page.dart';
 import 'privacy_policy_page.dart';
 import 'purchase_credits_page.dart';
@@ -54,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     } catch (e) {
-      print('加载积分余额失败: $e');
+      print('${AppLocalizations.of(context)!.loadPointsBalanceFailedError}: $e');
       if (mounted) {
         setState(() {
           _isLoadingPoints = false;
@@ -86,7 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
           isLoadingDreams = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载梦境数量失败: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.loadDreamCountFailed}: $e')),
         );
       }
     }
@@ -109,7 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(Icons.star, color: Colors.orange),
               const SizedBox(width: 8),
-              const Text('积分详情'),
+              Text(AppLocalizations.of(context)!.pointsDetails),
             ],
           ),
           content: _pointsBalance == null
@@ -119,11 +121,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (_isLoadingPoints) ...[
                       const CircularProgressIndicator(),
                       const SizedBox(height: 16),
-                      const Text('正在加载积分信息...'),
+                      Text(AppLocalizations.of(context)!.loadingPointsInfo),
                     ] else ... [
                       const Icon(Icons.error_outline, size: 48, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('暂无积分信息'),
+                      Text(AppLocalizations.of(context)!.noPointsInfo),
                     ],
                   ],
                 )
@@ -131,11 +133,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailRow('当前余额', _pointsBalance!.pointsBalance, Colors.orange),
+                    _buildDetailRow(AppLocalizations.of(context)!.currentBalance, _pointsBalance!.pointsBalance, Colors.orange),
                     const SizedBox(height: 12),
-                    _buildDetailRow('总获得积分', _pointsBalance!.totalPointsEarned, Colors.green),
+                    _buildDetailRow(AppLocalizations.of(context)!.totalPointsEarned, _pointsBalance!.totalPointsEarned, Colors.green),
                     const SizedBox(height: 12),
-                    _buildDetailRow('总消费积分', _pointsBalance!.totalPointsSpent, Colors.red),
+                    _buildDetailRow(AppLocalizations.of(context)!.totalPointsSpent, _pointsBalance!.totalPointsSpent, Colors.red),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -149,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '点击积分卡片可刷新最新数据',
+                              AppLocalizations.of(context)!.clickToRefreshData,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.blue[700],
@@ -164,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
             if (_pointsBalance != null)
               ElevatedButton(
@@ -172,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.pop(context);
                   _loadPointsBalance(); // 刷新数据
                 },
-                child: const Text('刷新'),
+                child: Text(AppLocalizations.of(context)!.refresh),
               ),
           ],
         );
@@ -216,18 +218,78 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // 显示语言选择对话框
+   Future<void> _showLanguageDialog() async {
+     final languageService = Provider.of<LanguageService>(context, listen: false);
+     
+     showDialog(
+       context: context,
+       builder: (context) {
+         final localizations = AppLocalizations.of(context)!;
+         return AlertDialog(
+           title: Text(localizations.selectLanguage),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                 title: Text(localizations.chinese),
+                leading: Radio<Locale>(
+                  value: const Locale('zh'),
+                  groupValue: languageService.currentLocale,
+                  onChanged: (Locale? value) {
+                     if (value != null) {
+                       languageService.changeLanguage(value.languageCode);
+                       Navigator.pop(context);
+                     }
+                   },
+                 ),
+                 onTap: () {
+                   languageService.changeLanguage('zh');
+                   Navigator.pop(context);
+                 },
+              ),
+              ListTile(
+                 title: Text(localizations.english),
+                leading: Radio<Locale>(
+                  value: const Locale('en'),
+                  groupValue: languageService.currentLocale,
+                  onChanged: (Locale? value) {
+                     if (value != null) {
+                       languageService.changeLanguage(value.languageCode);
+                       Navigator.pop(context);
+                     }
+                   },
+                 ),
+                 onTap: () {
+                   languageService.changeLanguage('en');
+                   Navigator.pop(context);
+                 },
+              ),
+            ],
+          ),
+          actions: [
+             TextButton(
+               onPressed: () => Navigator.pop(context),
+               child: Text(localizations.cancel),
+             ),
+           ],
+        );
+      },
+    );
+  }
+
   // 显示登出确认对话框
   Future<void> _showLogoutDialog() async {
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('退出登录'),
-          content: const Text('确定要退出登录吗？'),
+          title: Text(AppLocalizations.of(context)!.logoutConfirmTitle),
+          content: Text(AppLocalizations.of(context)!.logoutConfirmMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -241,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-              child: const Text('退出'),
+              child: Text(AppLocalizations.of(context)!.exit),
             ),
           ],
         );
@@ -251,9 +313,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('个人中心'),
+        title: Text(localizations.profile),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: const Color(0xFF374151),
@@ -298,9 +362,9 @@ class _ProfilePageState extends State<ProfilePage> {
             color: Colors.grey,
           ),
           const SizedBox(height: 16),
-          const Text(
-            '您还未登录',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.notLoggedIn,
+            style: const TextStyle(
               fontSize: 18,
               color: Colors.grey,
             ),
@@ -330,9 +394,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
             ),
-            child: const Text(
-              '立即登录',
-              style: TextStyle(fontSize: 16),
+            child: Text(
+              AppLocalizations.of(context)!.loginNow,
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ],
@@ -431,7 +495,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 
                 // 昵称
                 Text(
-                  user?.nickname ?? '未知用户',
+                  user?.nickname ?? AppLocalizations.of(context)!.unknownUser,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -447,7 +511,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ElevatedButton.icon(
                   onPressed: _navigateToEditProfile,
                   icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('编辑资料'),
+                  label: Text(AppLocalizations.of(context)!.editProfile),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white.withOpacity(0.9),
                     foregroundColor: const Color(0xFF667eea),
@@ -478,7 +542,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  '梦境',
+                  AppLocalizations.of(context)!.dreams,
                   '$dreamCount',
                   Icons.nights_stay,
                   Colors.blue,
@@ -517,10 +581,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     
                     return _buildMenuItem(
                       icon: Icons.account_balance_wallet_outlined,
-                      title: '积分详情',
+                      title: AppLocalizations.of(context)!.pointsDetails,
                       subtitle: apiUser != null 
-                        ? '余额: $pointsBalance | 总获得: $totalEarned'
-                        : '点击查看详细积分信息',
+                        ? '${AppLocalizations.of(context)!.balance}: $pointsBalance | ${AppLocalizations.of(context)!.totalEarned}: $totalEarned'
+                        : AppLocalizations.of(context)!.clickToViewPointsInfo,
                       onTap: () {
                         _showPointsDetailDialog();
                       },
@@ -530,7 +594,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const Divider(height: 1, indent: 16, endIndent: 16),
                  _buildMenuItem(
                   icon: Icons.shopping_cart_checkout_rounded,
-                  title: '购买积分',
+                  title: AppLocalizations.of(context)!.purchaseCredits,
                   onTap: () {
                      Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const PurchaseCreditsPage()),
@@ -539,8 +603,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 _buildMenuItem(
-                  icon: Icons.privacy_tip_outlined,
-                  title: '查看隐私协议',
+                   icon: Icons.language,
+                   title: AppLocalizations.of(context)!.languageSettings,
+                   onTap: () {
+                     _showLanguageDialog();
+                   },
+                 ),
+                 const Divider(height: 1, indent: 16, endIndent: 16),
+                 _buildMenuItem(
+                   icon: Icons.privacy_tip_outlined,
+                   title: AppLocalizations.of(context)!.privacyPolicy,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
@@ -573,7 +645,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: _buildMenuItem(
               icon: Icons.logout,
-              title: '退出登录',
+              title: AppLocalizations.of(context)!.logout,
               onTap: _showLogoutDialog,
               showDivider: false,
             ),
@@ -605,7 +677,7 @@ class _ProfilePageState extends State<ProfilePage> {
             try {
               await authService.refreshUserInfo();
             } catch (e) {
-              print('刷新用户信息失败: $e');
+              print('${AppLocalizations.of(context)!.refreshUserInfoFailedError}: $e');
             }
           },
           child: Container(
@@ -661,9 +733,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '积分',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.points,
+                  style: const TextStyle(
                     fontSize: 12,
                     color: Colors.grey,
                   ),

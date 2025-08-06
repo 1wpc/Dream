@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
 import '../pages/dream_style_selection_page.dart';
 import '../services/deepseek_service.dart';
+import '../services/language_service.dart';
 
 
 class SmartMeditationPage extends StatefulWidget {
@@ -43,18 +46,21 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
   bool _isMusicPlaying = false;
   
   // 名言列表
-  final List<String> _quotes = [
-    "静心如水，方能映照万物。",
-    "呼吸之间，感受当下的美好。",
-    "内心的平静，是最珍贵的财富。",
-    "放下执念，拥抱内在的宁静。",
-    "每一次呼吸，都是新的开始。",
-    "在宁静中，找到真正的自己。",
-    "心如止水，智慧自现。",
-    "冥想是心灵的洗礼。",
-    "静坐片刻，胜过千言万语。",
-    "内观自心，外观世界。"
-  ];
+  List<String> get _quotes {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.meditationQuote1,
+      localizations.meditationQuote2,
+      localizations.meditationQuote3,
+      localizations.meditationQuote4,
+      localizations.meditationQuote5,
+      localizations.meditationQuote6,
+      localizations.meditationQuote7,
+      localizations.meditationQuote8,
+      localizations.meditationQuote9,
+      localizations.meditationQuote10
+    ];
+  }
   
   int _currentQuoteIndex = 0;
   Timer? _quoteTimer;
@@ -91,7 +97,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
       });
       await _audioPlayer.resume();
     } catch (e) {
-      print('音频初始化失败: $e');
+      print('Audio initialization failed: $e');
     }
   }
   
@@ -152,7 +158,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
         _startSceneRotation();
       }
     } catch (e) {
-      print('生成场景失败: $e');
+      print('Scene generation failed: $e');
       if (mounted) {
         setState(() {
           _isLoadingScene = false;
@@ -182,7 +188,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
         });
       }
     } catch (e) {
-      print('生成下一个场景失败: $e');
+      print('Next scene generation failed: $e');
     }
   }
   
@@ -203,7 +209,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
       
       return sceneData;
     } catch (e) {
-      print('生成场景失败: $e');
+      print('Scene generation failed: $e');
       return _getDefaultScene();
     }
   }
@@ -211,17 +217,19 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
   // 生成冥想场景的流式方法
   Stream<String> _generateMeditationSceneStream() async* {
     try {
+      final languageService = Provider.of<LanguageService>(context, listen: false);
       final stream = DeepSeekService.generateMeditationSceneStream(
         styleKeywords: widget.dreamStyle.keywords,
         styleName: widget.dreamStyle.name,
         styleDescription: widget.dreamStyle.description,
+        languageService: languageService,
       );
       
       await for (final chunk in stream) {
         yield chunk;
       }
     } catch (e) {
-      print('生成冥想场景流失败: $e');
+      print('Meditation scene stream generation failed: $e');
       // 如果流式生成失败，返回空字符串，让上层方法使用默认场景
       yield '';
     }
@@ -243,18 +251,19 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
   }
   
   Map<String, dynamic> _getDefaultScene() {
+    final localizations = AppLocalizations.of(context)!;
     final defaultTexts = [
-      "让我们一起进入宁静的冥想世界，感受内心的平静与安详。",
-      "深深吸气，慢慢呼气，让身心完全放松下来。",
-      "想象自己置身于美丽的自然环境中，感受大自然的能量。",
-      "专注于当下这一刻，让思绪如云朵般自然飘过。",
-      "感受内心深处的宁静，这是属于你的神圣空间。"
+      localizations.defaultMeditationText1,
+      localizations.defaultMeditationText2,
+      localizations.defaultMeditationText3,
+      localizations.defaultMeditationText4,
+      localizations.defaultMeditationText5
     ];
     
     final random = Random();
     return {
       'text': defaultTexts[random.nextInt(defaultTexts.length)],
-      'image_prompt': '${widget.dreamStyle.description}风格的冥想场景',
+      'image_prompt': '${widget.dreamStyle.description}${localizations.meditationSceneSuffix}',
       'image_url': 'https://picsum.photos/800/600?random=${random.nextInt(1000)}'
     };
   }
@@ -294,14 +303,14 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text(
-          '🧘‍♀️ 智能冥想完成',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          '🧘‍♀️ ${AppLocalizations.of(context)!.meditationCompleted}',
+          style: const TextStyle(color: Colors.white),
           textAlign: TextAlign.center,
         ),
-        content: const Text(
-          '恭喜你完成了这次智能冥想练习！\n愿你内心平静，身心愉悦。',
-          style: TextStyle(color: Colors.white70),
+        content: Text(
+          AppLocalizations.of(context)!.meditationCompletedMessage,
+          style: const TextStyle(color: Colors.white70),
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -310,9 +319,9 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            child: const Text(
-              '确定',
-              style: TextStyle(color: Color(0xFF8B9AFF)),
+            child: Text(
+              AppLocalizations.of(context)!.confirm,
+              style: const TextStyle(color: Color(0xFF8B9AFF)),
             ),
           ),
         ],
@@ -508,9 +517,9 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
           
           const SizedBox(height: 20),
           
-          const Text(
-            '正在为你生成专属冥想场景...',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.generatingMeditationScene,
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 16,
             ),
@@ -689,7 +698,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    isInhaling ? '深吸气' : '慢呼气',
+                    isInhaling ? AppLocalizations.of(context)!.inhale : AppLocalizations.of(context)!.exhale,
                     key: ValueKey(isInhaling),
                     style: TextStyle(
                       color: Colors.white,
@@ -744,7 +753,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
                 
                 // 辅助提示文字
                 Text(
-                  isInhaling ? '感受能量流入' : '释放所有紧张',
+                  isInhaling ? AppLocalizations.of(context)!.feelEnergyFlow : AppLocalizations.of(context)!.releaseTension,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.7),
                     fontSize: 12,

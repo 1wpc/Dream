@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ZhougongDreamPage extends StatefulWidget {
   const ZhougongDreamPage({super.key});
@@ -59,7 +60,7 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
     } catch (e) {
       setState(() {
         _isSearching = false;
-        _errorMessage = '查询失败：$e，请稍后再试。';
+        _errorMessage = '${AppLocalizations.of(context)!.queryFailed}：$e';
         _dreamResult = null;
         _dreamTitle = null;
       });
@@ -91,7 +92,7 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
         throw Exception('未找到相关解梦内容');
       }
     } else {
-      throw Exception('API请求失败: ${response.statusCode}');
+      throw Exception('${AppLocalizations.of(context)!.apiRequestFailedStatus}: ${response.statusCode}');
     }
   }
 
@@ -287,7 +288,7 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             '解梦小知识',
                             style: TextStyle(
@@ -298,7 +299,7 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
                           ),
                           SizedBox(height: 12),
                           Text(
-                            '周公解梦是中国传统文化中对梦境进行解读的方式，相传始于周公旦。梦境被认为是潜意识的反映，可能预示着某些事物。不过，解梦仅供参考，重要决策请遵循理性思考。',
+                            AppLocalizations.of(context)!.dreamKnowledgeContent,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -317,4 +318,4 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
       ),
     );
   }
-} 
+}

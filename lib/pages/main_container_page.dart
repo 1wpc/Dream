@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dream_core_page.dart';
 import 'inspiration_page.dart';
 import 'profile_page.dart';
@@ -20,21 +21,21 @@ class _MainContainerPageState extends State<MainContainerPage> {
     const ProfilePage(),
   ];
 
-  final List<BottomNavigationBarItem> _bottomNavItems = [
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.home_outlined),
-      activeIcon: Icon(Icons.home),
-      label: '主页',
+  List<BottomNavigationBarItem> get _bottomNavItems => [
+    BottomNavigationBarItem(
+      icon: const Icon(Icons.home_outlined),
+      activeIcon: const Icon(Icons.home),
+      label: AppLocalizations.of(context)!.home,
     ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.lightbulb_outline),
-      activeIcon: Icon(Icons.lightbulb),
-      label: '灵感',
+    BottomNavigationBarItem(
+      icon: const Icon(Icons.lightbulb_outline),
+      activeIcon: const Icon(Icons.lightbulb),
+      label: AppLocalizations.of(context)!.inspiration,
     ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      activeIcon: Icon(Icons.person),
-      label: '我的',
+    BottomNavigationBarItem(
+      icon: const Icon(Icons.person_outline),
+      activeIcon: const Icon(Icons.person),
+      label: AppLocalizations.of(context)!.mine,
     ),
   ];
 

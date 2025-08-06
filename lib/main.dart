@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utills/env.dart';
 import 'pages/main_container_page.dart';
 import 'pages/login_page.dart';
@@ -12,6 +14,7 @@ import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/payment_service.dart';
 import 'services/privacy_service.dart';
+import 'services/language_service.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
@@ -24,25 +27,25 @@ void main() async {
   // 初始化API服务
   try {
     ApiService.init();
-    print('API服务初始化成功');
+    print('API service initialized successfully');
     
     // 检查API连接状态
     final isConnected = await ApiService.checkConnection();
     if (isConnected) {
       print('后端API连接正常');
     } else {
-      print('后端API连接失败，将使用本地存储模式');
+      print('Backend API connection failed, using local storage mode');
     }
   } catch (e) {
-    print('API服务初始化失败: $e');
+    print('API service initialization failed: $e');
   }
   
   // 初始化支付服务
   try {
     PaymentService().initialize();
-    print('支付服务初始化成功');
+    print('Payment service initialized successfully');
   } catch (e) {
-    print('支付服务初始化失败: $e');
+    print('Payment service initialization failed: $e');
   }
   
   runApp(const MyApp());
@@ -56,12 +59,28 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => LanguageService()),
       ],
-      child: MaterialApp(
-      title: '白日做梦',
-      theme: ThemeData.dark(),
-      home: const SplashPage(),
-      debugShowCheckedModeBanner: false,
+      child: Consumer<LanguageService>(
+        builder: (context, languageService, child) {
+          return MaterialApp(
+            title: '白日做梦',
+            theme: ThemeData.dark(),
+            home: const SplashPage(),
+            debugShowCheckedModeBanner: false,
+            locale: languageService.currentLocale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('zh'),
+              Locale('en'),
+            ],
+          );
+        },
       ),
     );
   }
@@ -107,8 +126,8 @@ class _SplashPageState extends State<SplashPage> {
       // 尝试初始化认证状态
       await authService.initAuth();
     } catch (e) {
-      print('初始化身份认证失败: $e');
-      // 如果API认证失败，尝试从本地加载用户信息
+      print('Authentication initialization failed: $e');
+      // If API authentication fails, try loading user info from local storage
       final authService = Provider.of<AuthService>(context, listen: false);
       await authService.loadUserProfileFromLocal();
     }

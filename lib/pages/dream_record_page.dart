@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'add_dream_page.dart';
 import 'dream_detail_page.dart';
 import 'dart:io';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DreamRecordPage extends StatefulWidget {
   const DreamRecordPage({super.key});
@@ -62,7 +63,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载失败：$e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.loadFailed}：$e')),
         );
       }
     }
@@ -111,7 +112,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
         controller: _searchController,
         onChanged: _searchDreams,
         decoration: InputDecoration(
-          hintText: '搜索梦境标题或内容...',
+          hintText: AppLocalizations.of(context)!.searchDreamHint,
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: 16,
@@ -154,18 +155,18 @@ class _DreamRecordPageState extends State<DreamRecordPage>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这条梦境记录吗？此操作不可恢复。'),
+        title: Text(AppLocalizations.of(context)!.confirmDelete),
+        content: Text(AppLocalizations.of(context)!.confirmDeleteDreamMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              '删除',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              AppLocalizations.of(context)!.delete,
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -178,8 +179,8 @@ class _DreamRecordPageState extends State<DreamRecordPage>
         await _loadDreams();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('删除成功 ✨'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.deleteSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -188,7 +189,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('删除失败：$e'),
+              content: Text('${AppLocalizations.of(context)!.deleteFailed}：$e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -204,11 +205,11 @@ class _DreamRecordPageState extends State<DreamRecordPage>
       final difference = now.difference(dateTime);
 
       if (difference.inDays == 0) {
-        return '今天 ${DateFormat('HH:mm').format(dateTime)}';
+        return '${AppLocalizations.of(context)!.today} ${DateFormat('HH:mm').format(dateTime)}';
       } else if (difference.inDays == 1) {
-        return '昨天 ${DateFormat('HH:mm').format(dateTime)}';
+        return '${AppLocalizations.of(context)!.yesterday} ${DateFormat('HH:mm').format(dateTime)}';
       } else if (difference.inDays < 7) {
-        return '${difference.inDays}天前';
+        return AppLocalizations.of(context)!.daysAgo(difference.inDays);
       } else {
         return DateFormat('MM月dd日').format(dateTime);
       }
@@ -366,7 +367,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                                           color: Colors.red.shade400,
                                         ),
                                         onPressed: () => _deleteDream(dream.id!),
-                                        tooltip: '删除',
+                                        tooltip: AppLocalizations.of(context)!.delete,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -394,7 +395,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                                             _loadDreams();
                                           }
                                         },
-                                        tooltip: '查看详情',
+                                        tooltip: AppLocalizations.of(context)!.viewDetails,
                                       ),
                                     ),
                                   ],
@@ -461,7 +462,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
             ),
             const SizedBox(height: 8),
             Text(
-              '梦境',
+              AppLocalizations.of(context)!.dream,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 16,
@@ -481,9 +482,9 @@ class _DreamRecordPageState extends State<DreamRecordPage>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          '我的梦境',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.myDreams,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -498,14 +499,14 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                 color: Colors.white,
               ),
               onPressed: _toggleSearch,
-              tooltip: _isSearching ? '关闭搜索' : '搜索梦境',
+              tooltip: _isSearching ? AppLocalizations.of(context)!.closeSearch : AppLocalizations.of(context)!.searchDreams,
             ),
           if (_dreams.isNotEmpty && !_isSearching)
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: Text(
-                  '共 ${_dreams.length} 个梦境',
+                  AppLocalizations.of(context)!.totalDreams(_dreams.length),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -518,7 +519,7 @@ class _DreamRecordPageState extends State<DreamRecordPage>
               padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: Text(
-                  '找到 ${_filteredDreams.length} 个结果',
+                  AppLocalizations.of(context)!.searchResults(_filteredDreams.length),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -541,17 +542,17 @@ class _DreamRecordPageState extends State<DreamRecordPage>
           ),
         ),
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
+                    const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
-                      '正在加载梦境记录...',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.loadingDreams,
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16,
                       ),
@@ -570,18 +571,18 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                           size: 80,
                         ),
                         const SizedBox(height: 24),
-                        const Text(
-                          '还没有梦境记录',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.noDreamsYet,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          '点击右下角按钮开始记录你的第一个梦境',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.tapToRecordFirstDream,
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 16,
                           ),
@@ -604,18 +605,18 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                                       size: 80,
                                     ),
                                     const SizedBox(height: 24),
-                                    const Text(
-                                      '没有找到匹配的梦境',
-                                      style: TextStyle(
+                                    Text(
+                                      AppLocalizations.of(context)!.noMatchingDreams,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    const Text(
-                                      '尝试使用其他关键词搜索',
-                                      style: TextStyle(
+                                    Text(
+                                      AppLocalizations.of(context)!.tryOtherKeywords,
+                                      style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 16,
                                       ),
@@ -665,9 +666,9 @@ class _DreamRecordPageState extends State<DreamRecordPage>
           foregroundColor: Colors.purple.shade600,
           elevation: 0,
           icon: const Icon(Icons.add, size: 24),
-          label: const Text(
-            '记录梦境',
-            style: TextStyle(
+          label: Text(
+            AppLocalizations.of(context)!.recordDream,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dart:async';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../services/language_service.dart';
 import '../models/dream_models.dart';
 import 'main_container_page.dart';
 
@@ -107,8 +109,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       color: Colors.white70,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      '白日做梦',
+                    Text(
+                      AppLocalizations.of(context)!.dayDream,
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -117,7 +119,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '探索梦境的无限可能',
+                      AppLocalizations.of(context)!.exploreInfinitePossibilities,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white.withOpacity(0.7),
@@ -145,9 +147,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   ),
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white70,
-                  tabs: const [
-                    Tab(text: '登录'),
-                    Tab(text: '注册'),
+                  tabs: [
+                    Tab(text: AppLocalizations.of(context)!.login),
+            Tab(text: AppLocalizations.of(context)!.register),
                   ],
                 ),
               ),
@@ -164,6 +166,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   ],
                 ),
               ),
+              
+              // 语言切换按钮
+              _buildLanguageSwitch(),
+              
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -192,10 +199,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             labelStyle: const TextStyle(fontSize: 12),
-            tabs: const [
-              Tab(text: '用户名'),
-              Tab(text: '手机号'),
-              Tab(text: '邮箱'),
+            tabs: [
+              Tab(text: AppLocalizations.of(context)!.username),
+                      Tab(text: AppLocalizations.of(context)!.phone),
+                      Tab(text: AppLocalizations.of(context)!.email),
             ],
           ),
         ),
@@ -237,9 +244,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ),
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
-            tabs: const [
-              Tab(text: '手机号注册'),
-              Tab(text: '邮箱注册'),
+            tabs: [
+              Tab(text: AppLocalizations.of(context)!.phoneRegister),
+                      Tab(text: AppLocalizations.of(context)!.emailRegister),
             ],
           ),
         ),
@@ -268,19 +275,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _loginUsernameController,
-            label: '用户名/手机号/邮箱',
+            label: AppLocalizations.of(context)!.usernamePhoneEmail,
             icon: Icons.person_outline,
           ),
           const SizedBox(height: 16),
           _buildInputField(
             controller: _loginPasswordController,
-            label: '密码',
+            label: AppLocalizations.of(context)!.password,
             icon: Icons.lock_outline,
             isPassword: true,
           ),
           const SizedBox(height: 32),
           _buildActionButton(
-            '登录',
+            AppLocalizations.of(context)!.login,
             () => _handleUsernameLogin(),
           ),
         ],
@@ -296,7 +303,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _loginPhoneController,
-            label: '手机号',
+            label: AppLocalizations.of(context)!.phone,
             icon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
           ),
@@ -306,7 +313,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               Expanded(
                 child: _buildInputField(
                   controller: _loginCodeController,
-                  label: '验证码',
+                  label: AppLocalizations.of(context)!.verificationCode,
                   icon: Icons.verified_user_outlined,
                   keyboardType: TextInputType.number,
                 ),
@@ -317,9 +324,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 32),
           _buildActionButton(
-            '登录',
-            () => _handlePhoneLogin(),
-          ),
+              AppLocalizations.of(context)!.login,
+              () => _handlePhoneLogin(),
+            ),
         ],
       ),
     );
@@ -337,7 +344,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _registerPhoneController,
-            label: '手机号',
+            label: AppLocalizations.of(context)!.phoneNumber,
             icon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
           ),
@@ -347,7 +354,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               Expanded(
                 child: _buildInputField(
                   controller: _registerPhoneCodeController,
-                  label: '验证码',
+                  label: AppLocalizations.of(context)!.verificationCodeLabel,
                   icon: Icons.verified_user_outlined,
                   keyboardType: TextInputType.number,
                 ),
@@ -359,19 +366,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           _buildInputField(
             controller: _registerPasswordController,
-            label: '密码',
+            label: AppLocalizations.of(context)!.passwordLabel,
             icon: Icons.lock_outline,
             isPassword: true,
           ),
           const SizedBox(height: 16),
           _buildInputField(
             controller: _registerDisplayNameController,
-            label: '昵称',
+            label: AppLocalizations.of(context)!.nickname,
             icon: Icons.badge_outlined,
           ),
           const SizedBox(height: 32),
           _buildActionButton(
-            '注册',
+            AppLocalizations.of(context)!.register,
             () => _handlePhoneRegister(),
           ),
         ],
@@ -420,7 +427,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _registerEmailController,
-            label: '邮箱',
+            label: AppLocalizations.of(context)!.emailLabel,
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
           ),
@@ -430,7 +437,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               Expanded(
                 child: _buildInputField(
                   controller: _registerEmailCodeController,
-                  label: '验证码',
+                  label: AppLocalizations.of(context)!.verificationCodeLabel,
                   icon: Icons.verified_user_outlined,
                   keyboardType: TextInputType.number,
                 ),
@@ -442,19 +449,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           _buildInputField(
             controller: _registerPasswordController,
-            label: '密码',
+            label: AppLocalizations.of(context)!.passwordLabel,
             icon: Icons.lock_outline,
             isPassword: true,
           ),
           const SizedBox(height: 16),
           _buildInputField(
             controller: _registerDisplayNameController,
-            label: '昵称',
+            label: AppLocalizations.of(context)!.nicknameLabel,
             icon: Icons.badge_outlined,
           ),
           const SizedBox(height: 32),
           _buildActionButton(
-            '注册',
+            AppLocalizations.of(context)!.registerLabel,
             () => _handleEmailRegister(),
           ),
         ],
@@ -470,7 +477,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         children: [
           _buildInputField(
             controller: _loginEmailController,
-            label: '邮箱',
+            label: AppLocalizations.of(context)!.emailLabel,
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
           ),
@@ -480,7 +487,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               Expanded(
                 child: _buildInputField(
                   controller: _loginEmailCodeController,
-                  label: '验证码',
+                  label: AppLocalizations.of(context)!.verificationCodeLabel,
                   icon: Icons.verified_user_outlined,
                   keyboardType: TextInputType.number,
                 ),
@@ -491,7 +498,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 32),
           _buildActionButton(
-            '登录',
+            AppLocalizations.of(context)!.loginLabel,
             () => _handleEmailLogin(),
           ),
         ],
@@ -525,7 +532,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           ),
         ),
         child: Text(
-          isCountingDown ? '${countdown}s' : '发送',
+          isCountingDown ? '${countdown}s' : AppLocalizations.of(context)!.send,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -579,7 +586,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   // 处理用户名登录
   Future<void> _handleUsernameLogin() async {
     if (_loginUsernameController.text.isEmpty || _loginPasswordController.text.isEmpty) {
-      _showMessage('请填写完整信息');
+      _showMessage(AppLocalizations.of(context)!.pleaseCompleteInfo);
       return;
     }
 
@@ -597,10 +604,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (user != null) {
         _navigateToHome();
       } else {
-        _showMessage('登录失败，请检查用户名和密码');
+        _showMessage(AppLocalizations.of(context)!.loginFailed);
       }
     } catch (e) {
-      _showMessage('登录失败：$e');
+      _showMessage('${AppLocalizations.of(context)!.loginFailedError}：$e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -609,7 +616,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   // 处理手机号登录
   Future<void> _handlePhoneLogin() async {
     if (_loginPhoneController.text.isEmpty || _loginCodeController.text.isEmpty) {
-      _showMessage('请填写完整信息');
+      _showMessage(AppLocalizations.of(context)!.pleaseCompleteAllInfo);
       return;
     }
 
@@ -625,10 +632,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (user != null) {
         _navigateToHome();
       } else {
-        _showMessage('登录失败，请检查手机号和验证码');
+        _showMessage(AppLocalizations.of(context)!.loginFailedCheckPhone);
       }
     } catch (e) {
-      _showMessage('登录失败：$e');
+      _showMessage('${AppLocalizations.of(context)!.loginFailedError}：$e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -637,7 +644,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   // 处理邮箱验证码登录
   Future<void> _handleEmailLogin() async {
     if (_loginEmailController.text.isEmpty || _loginEmailCodeController.text.isEmpty) {
-      _showMessage('请填写完整信息');
+      _showMessage(AppLocalizations.of(context)!.pleaseCompleteAllInfo);
       return;
     }
 
@@ -653,10 +660,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (user != null) {
         _navigateToHome();
       } else {
-        _showMessage('登录失败，请检查邮箱和验证码');
+        _showMessage(AppLocalizations.of(context)!.loginFailedCheckEmail);
       }
     } catch (e) {
-      _showMessage('登录失败：$e');
+      _showMessage('${AppLocalizations.of(context)!.loginFailedError}：$e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -672,7 +679,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         _registerEmailCodeController.text.isEmpty ||
         _registerPasswordController.text.isEmpty ||
         _registerDisplayNameController.text.isEmpty) {
-      _showMessage('请填写完整信息');
+      _showMessage(AppLocalizations.of(context)!.pleaseCompleteAllInfo);
       return;
     }
 
@@ -688,13 +695,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       );
       
       if (user != null) {
-        _showMessage('注册成功！欢迎使用梦核');
+        _showMessage(AppLocalizations.of(context)!.registerSuccess);
         _navigateToHome();
       } else {
-        _showMessage('注册失败，请检查信息');
+        _showMessage(AppLocalizations.of(context)!.registerFailed);
       }
     } catch (e) {
-      _showMessage('注册失败：$e');
+      _showMessage('${AppLocalizations.of(context)!.registerFailedError}：$e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -706,7 +713,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         _registerPhoneCodeController.text.isEmpty ||
         _registerPasswordController.text.isEmpty ||
         _registerDisplayNameController.text.isEmpty) {
-      _showMessage('请填写完整信息');
+      _showMessage(AppLocalizations.of(context)!.pleaseCompleteAllInfo);
       return;
     }
 
@@ -723,13 +730,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       );
       
       if (user != null) {
-        _showMessage('注册成功！欢迎使用梦核');
+        _showMessage(AppLocalizations.of(context)!.registerSuccessWelcome);
         _navigateToHome();
       } else {
-        _showMessage('注册失败，请检查信息');
+        _showMessage(AppLocalizations.of(context)!.registerFailedCheckInfo);
       }
     } catch (e) {
-      _showMessage('注册失败：$e');
+      _showMessage('${AppLocalizations.of(context)!.registerFailedError}：$e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -778,13 +785,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
     
     if (phone.isEmpty) {
-      _showMessage('请先输入手机号');
+      _showMessage(AppLocalizations.of(context)!.pleaseEnterPhone);
       return;
     }
     
     // 验证手机号格式
     if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(phone)) {
-      _showMessage('请输入正确的手机号格式');
+      _showMessage(AppLocalizations.of(context)!.pleaseEnterCorrectPhone);
       return;
     }
     
@@ -796,7 +803,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       final response = await ApiService.sendSMSVerificationCode(request);
       
       if (response.success) {
-        _showMessage('验证码已发送到您的手机');
+        _showMessage(AppLocalizations.of(context)!.verificationCodeSent);
         _startCountdown(isLogin);
       } else {
         _showMessage(response.message);
@@ -805,7 +812,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (e is ApiException) {
         _showMessage(e.message);
       } else {
-        _showMessage('发送验证码失败：$e');
+        _showMessage('${AppLocalizations.of(context)!.sendVerificationCodeFailed}：$e');
       }
     }
   }
@@ -824,13 +831,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
     
     if (email.isEmpty) {
-      _showMessage('请先输入邮箱地址');
+      _showMessage(AppLocalizations.of(context)!.pleaseEnterEmail);
       return;
     }
     
     // 验证邮箱格式
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      _showMessage('请输入正确的邮箱格式');
+      _showMessage(AppLocalizations.of(context)!.pleaseEnterCorrectEmail);
       return;
     }
     
@@ -842,7 +849,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       final response = await ApiService.sendVerificationCode(request);
       
       if (response.success) {
-        _showMessage('验证码已发送到您的邮箱');
+        _showMessage(AppLocalizations.of(context)!.verificationCodeSentToEmail);
         _startCountdown(isLogin);
       } else {
         _showMessage(response.message);
@@ -851,7 +858,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (e is ApiException) {
         _showMessage(e.message);
       } else {
-        _showMessage('发送验证码失败：$e');
+        _showMessage('${AppLocalizations.of(context)!.sendVerificationCodeFailedError}：$e');
       }
     }
   }
@@ -891,6 +898,108 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
+    );
+  }
+  
+  // 构建语言切换组件
+  Widget _buildLanguageSwitch() {
+    return Consumer<LanguageService>(
+      builder: (context, languageService, child) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.language,
+                color: Colors.white70,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  _showLanguageDialog(languageService);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        languageService.isChinese ? '中文' : 'English',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  // 显示语言选择对话框
+  void _showLanguageDialog(LanguageService languageService) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D1B69),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.selectLanguage,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languageService.getSupportedLanguages().map((language) {
+              final isSelected = languageService.currentLocale.languageCode == language['code'];
+              return ListTile(
+                leading: Icon(
+                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  color: isSelected ? const Color(0xFF6B73FF) : Colors.white70,
+                ),
+                title: Text(
+                  language['name']!,
+                  style: TextStyle(
+                    color: isSelected ? const Color(0xFF6B73FF) : Colors.white,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                onTap: () {
+                  languageService.changeLanguage(language['code']!);
+                  Navigator.of(context).pop();
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 }

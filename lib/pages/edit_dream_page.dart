@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/database_service.dart';
 import '../services/jimeng_service.dart';
@@ -57,7 +58,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
   Future<void> _generateImage() async {
     if (_contentController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先输入梦境内容')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseEnterDreamContent)),
       );
       return;
     }
@@ -82,7 +83,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('生成图片失败：$e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.generateImageFailed}：$e')),
         );
       }
     } finally {
@@ -115,13 +116,13 @@ class _EditDreamPageState extends State<EditDreamPage> {
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存成功')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.saveSuccess)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失败：$e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.saveFailed}：$e')),
         );
       }
     } finally {
@@ -139,9 +140,9 @@ class _EditDreamPageState extends State<EditDreamPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          '编辑梦境',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.editDream,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -150,9 +151,9 @@ class _EditDreamPageState extends State<EditDreamPage> {
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveDream,
-            child: const Text(
-              '保存',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.save,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
               ),
@@ -182,9 +183,9 @@ class _EditDreamPageState extends State<EditDreamPage> {
                     children: [
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: '标题',
-                          labelStyle: TextStyle(color: Colors.white70),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.title,
+                          labelStyle: const TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.white30),
                           ),
@@ -195,7 +196,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
                         style: const TextStyle(color: Colors.white),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return '请输入标题';
+                            return AppLocalizations.of(context)!.pleaseEnterTitle;
                           }
                           return null;
                         },
@@ -203,9 +204,9 @@ class _EditDreamPageState extends State<EditDreamPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _contentController,
-                        decoration: const InputDecoration(
-                          labelText: '内容',
-                          labelStyle: TextStyle(color: Colors.white70),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.content,
+                          labelStyle: const TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.white30),
                           ),
@@ -217,7 +218,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
                         maxLines: 10,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return '请输入内容';
+                            return AppLocalizations.of(context)!.pleaseEnterContent;
                           }
                           return null;
                         },
@@ -229,7 +230,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
                             child: ElevatedButton.icon(
                               onPressed: _pickImage,
                               icon: const Icon(Icons.photo_library),
-                              label: const Text('选择图片'),
+                              label: Text(AppLocalizations.of(context)!.selectImage),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white24,
                                 foregroundColor: Colors.white,
@@ -241,7 +242,7 @@ class _EditDreamPageState extends State<EditDreamPage> {
                             child: ElevatedButton.icon(
                               onPressed: _generateImage,
                               icon: const Icon(Icons.auto_awesome),
-                              label: const Text('AI生成'),
+                              label: Text(AppLocalizations.of(context)!.aiGenerate),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white24,
                                 foregroundColor: Colors.white,
@@ -269,4 +270,4 @@ class _EditDreamPageState extends State<EditDreamPage> {
       ),
     );
   }
-} 
+}

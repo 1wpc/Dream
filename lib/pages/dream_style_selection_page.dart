@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DreamStyleSelectionPage extends StatelessWidget {
   const DreamStyleSelectionPage({super.key});
@@ -89,8 +90,8 @@ class DreamStyleSelectionPage extends StatelessWidget {
                             onPressed: () => Navigator.pop(context),
                             icon: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
-                          const Text(
-                            '选择梦境风格',
+                          Text(
+                            AppLocalizations.of(context)!.selectDreamStyle,
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -100,10 +101,10 @@ class DreamStyleSelectionPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      const Padding(
-                        padding: EdgeInsets.only(left: 48),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 48),
                         child: Text(
-                          '选择一种梦境风格，AI将为您编织独特的梦境体验',
+                          AppLocalizations.of(context)!.selectStyleDescription,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white70,
@@ -150,7 +151,7 @@ class DreamStyleSelectionPage extends StatelessWidget {
           // 添加选择反馈
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已选择：${style.name}'),
+              content: Text(AppLocalizations.of(context)!.selectedStyle(style.name)),
               duration: const Duration(milliseconds: 800),
               backgroundColor: style.gradient.first,
             ),

@@ -4,7 +4,7 @@ import '../services/deepseek_service.dart';
 import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_markdown/flutter_markdown.dart'; // 待依赖安装后启用
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DreamDetailPage extends StatefulWidget {
   final DreamRecord dream;
@@ -173,7 +173,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('AI解梦失败：${e.toString().replaceAll('Exception: ', '')}'),
+            content: Text('${AppLocalizations.of(context)!.aiInterpretationFailed}：${e.toString().replaceAll('Exception: ', '')}'),
             backgroundColor: Colors.red.shade400,
           ),
         );
@@ -281,17 +281,17 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这条梦境记录吗？此操作不可恢复。'),
+        title: Text(AppLocalizations.of(context)!.confirmDelete),
+        content: Text(AppLocalizations.of(context)!.confirmDeleteDreamMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              '删除',
+            child: Text(
+              AppLocalizations.of(context)!.delete,
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -305,13 +305,13 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
         if (mounted) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('删除成功')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.deleteSuccess)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败：$e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.deleteFailed}：$e')),
           );
         }
       }
@@ -566,9 +566,9 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                         size: 24,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        '梦境内容',
-                                        style: TextStyle(
+                                      Text(
+                                        AppLocalizations.of(context)!.dreamContent,
+                                        style: const TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
                                           color: Color(0xFF1A237E),
@@ -636,7 +636,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                               size: 20,
                                             ),
                                         label: Text(
-                                          _isInterpreting ? '解梦中...' : 'AI解梦（消耗1积分）',
+                                          _isInterpreting ? AppLocalizations.of(context)!.interpreting : AppLocalizations.of(context)!.aiInterpretDream,
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
@@ -714,9 +714,9 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
-                                              const Text(
-                                                'AI解梦分析',
-                                                style: TextStyle(
+                                              Text(
+                                                AppLocalizations.of(context)!.aiInterpretationAnalysis,
+                                                style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
                                                   color: Color(0xFF374151),
@@ -743,7 +743,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                             duration: const Duration(milliseconds: 300),
                                             child: _buildMarkdownText(_isInterpreting && _streamingText.isNotEmpty 
                                                 ? _streamingText 
-                                                : (_dreamInterpretation ?? '正在分析您的梦境...')),
+                                                : (_dreamInterpretation ?? AppLocalizations.of(context)!.analyzingDream)),
                                             key: ValueKey(_isInterpreting ? _streamingText : _dreamInterpretation),
                                           ),
                                           // 流式输出时的打字机光标效果
@@ -759,10 +759,10 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
-                                                    '正在解析...',
-                                                    style: TextStyle(
+                                                    AppLocalizations.of(context)!.parsing,
+                                                    style: const TextStyle(
                                                       fontSize: 12,
-                                                      color: const Color(0xFF667eea),
+                                                      color: Color(0xFF667eea),
                                                       fontStyle: FontStyle.italic,
                                                     ),
                                                   ),
@@ -785,7 +785,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          '愿美梦成真',
+                                          AppLocalizations.of(context)!.sweetDreams,
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey.shade500,
@@ -883,7 +883,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      pullProgress > 0.8 ? '享受美景中 ✨' : '下拉查看全景 👆',
+                      pullProgress > 0.8 ? AppLocalizations.of(context)!.enjoyingView : AppLocalizations.of(context)!.pullToViewFullscreen,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -963,8 +963,8 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '分享梦境到社区',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.shareDreamToCommunity,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -972,7 +972,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                   ),
                   SizedBox(height: 16),
                   Text(
-                    '选择分享方式：',
+                    AppLocalizations.of(context)!.chooseShareMethod,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade600,
@@ -1019,15 +1019,15 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                         ),
                       ),
                       title: Text(
-                        '快速分享',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.quickShare,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
                       ),
                       subtitle: Text(
-                        '自动识别分类和标签，匿名发布',
+                        AppLocalizations.of(context)!.quickShareDescription,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade600,
@@ -1075,7 +1075,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 8),
-                Text('梦境已快速分享到社区！'),
+                Text(AppLocalizations.of(context)!.dreamSharedSuccessfully),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -1092,7 +1092,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('快速分享失败：${e.toString().replaceAll('Exception: ', '')}'),
+            content: Text('${AppLocalizations.of(context)!.quickShareFailed}：${e.toString().replaceAll('Exception: ', '')}'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
           ),

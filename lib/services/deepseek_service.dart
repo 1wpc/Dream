@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'api_service.dart';
+import 'language_service.dart';
 
 class DeepSeekService {
   // 后端统一 Chat Completions 路径
@@ -11,12 +12,12 @@ class DeepSeekService {
   static final List<String> _inspirationHistory = [];
 
   // 生成梦境场景描述 - 流式输出版本
-  static Stream<String> generateDreamSceneStream({String? styleKeywords}) async* {
+  static Stream<String> generateDreamSceneStream({String? styleKeywords, LanguageService? languageService}) async* {
     final dio = ApiService.dio;
     try {
       final response = await dio.post<ResponseBody>(
         _chatPath,
-        data: _buildDreamScenePayload(styleKeywords, stream: true),
+        data: _buildDreamScenePayload(styleKeywords, languageService, stream: true),
         options: Options(responseType: ResponseType.stream),
       );
 
@@ -104,14 +105,14 @@ class DeepSeekService {
   }
 
   // 生成灵感建议 - 流式输出版本
-  static Stream<String> generateInspirationStream() async* {
+  static Stream<String> generateInspirationStream({LanguageService? languageService}) async* {
     final dio = ApiService.dio;
     String fullInspiration = '';
     
     try {
       final response = await dio.post<ResponseBody>(
         _chatPath,
-        data: _buildInspirationPayload(stream: true),
+        data: _buildInspirationPayload(languageService: languageService, stream: true),
         options: Options(responseType: ResponseType.stream),
       );
 
@@ -158,8 +159,8 @@ class DeepSeekService {
   }
 
   // 生成灵感建议 - 统一使用流式输出
-  static Stream<String> generateInspiration() {
-    return generateInspirationStream();
+  static Stream<String> generateInspiration({LanguageService? languageService}) {
+    return generateInspirationStream(languageService: languageService);
   }
 
   // 生成冥想场景 - 流式输出版本
@@ -167,6 +168,7 @@ class DeepSeekService {
     String? styleKeywords,
     String? styleName,
     String? styleDescription,
+    LanguageService? languageService,
   }) async* {
     final dio = ApiService.dio;
     try {
@@ -176,6 +178,7 @@ class DeepSeekService {
           styleKeywords: styleKeywords,
           styleName: styleName,
           styleDescription: styleDescription,
+          languageService: languageService,
           stream: true,
         ),
         options: Options(responseType: ResponseType.stream),
@@ -198,9 +201,12 @@ class DeepSeekService {
 
   // ----------------- 私有辅助方法 -----------------
 
-  static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords, {required bool stream}) {
+  static Map<String, dynamic> _buildDreamScenePayload(String? styleKeywords, LanguageService? languageService, {required bool stream}) {
+    final isEnglish = languageService?.isEnglish ?? false;
     final stylePrompt = styleKeywords != null
-        ? '请特别注意生成${styleKeywords}风格的梦境场景。'
+        ? (isEnglish 
+            ? 'Please pay special attention to generating ${styleKeywords} style dream scenes.'
+            : '请特别注意生成${styleKeywords}风格的梦境场景。')
         : '';
 
     return {
@@ -208,13 +214,17 @@ class DeepSeekService {
       'messages': [
         {
           'role': 'system',
-          'content': _dreamSceneSystemPrompt(stylePrompt, styleKeywords),
+          'content': _dreamSceneSystemPrompt(stylePrompt, styleKeywords, isEnglish),
         },
         {
           'role': 'user',
           'content': styleKeywords != null
-              ? '请为我生成3-5个${styleKeywords}风格的梦幻场景。'
-              : '请为我生成3-5个梦幻场景的提示词和诗意解释。',
+              ? (isEnglish 
+                  ? 'Please generate 3-5 ${styleKeywords} style dream scenes for me.'
+                  : '请为我生成3-5个${styleKeywords}风格的梦幻场景。')
+              : (isEnglish 
+                  ? 'Please generate 3-5 dream scene prompts and poetic explanations for me.'
+                  : '请为我生成3-5个梦幻场景的提示词和诗意解释。'),
         }
       ],
       'stream': stream,
@@ -265,9 +275,19 @@ class DeepSeekService {
     };
   }
 
-  static Map<String, dynamic> _buildInspirationPayload({required bool stream}) {
+  static Map<String, dynamic> _buildInspirationPayload({LanguageService? languageService, required bool stream}) {
+    final isEnglish = languageService?.isEnglish ?? false;
     // 随机生成不同的用户请求，增加多样性
-    final List<String> userRequests = [
+    final List<String> userRequests = isEnglish ? [
+      'I\'m bored right now, give me an interesting inspiration suggestion!',
+      'Don\'t know what to do, any fresh ideas?',
+      'Want some creative inspiration to make my life more interesting!',
+      'Feeling a bit lost, need a small action suggestion~',
+      'Want to do something special, give me a good idea!',
+      'Want to try something new today, any recommendations?',
+      'Want some positive suggestions to improve my mood!',
+      'Give me a simple and interesting activity suggestion~',
+    ] : [
       '我现在很无聊，给我一个有趣的灵感建议吧！',
       '不知道该做什么，来点新鲜的想法？',
       '想要一些创意灵感，让我的生活更有趣！',
@@ -333,10 +353,14 @@ class DeepSeekService {
     String? styleKeywords,
     String? styleName,
     String? styleDescription,
+    LanguageService? languageService,
     required bool stream,
   }) {
+    final isEnglish = languageService?.isEnglish ?? false;
     final stylePrompt = styleName != null
-        ? '请特别注意生成${styleName}风格的冥想场景。'
+        ? (isEnglish 
+            ? 'Please pay special attention to generating ${styleName} style meditation scenes.'
+            : '请特别注意生成${styleName}风格的冥想场景。')
         : '';
 
     return {
@@ -344,13 +368,17 @@ class DeepSeekService {
       'messages': [
         {
           'role': 'system',
-          'content': _meditationSceneSystemPrompt(stylePrompt, styleKeywords, styleDescription),
+          'content': _meditationSceneSystemPrompt(stylePrompt, styleKeywords, styleDescription, isEnglish),
         },
         {
           'role': 'user',
           'content': styleName != null
-              ? '请为我生成一个${styleName}风格的冥想场景内容。'
-              : '请为我生成一个冥想场景内容。',
+              ? (isEnglish 
+                  ? 'Please generate a ${styleName} style meditation scene content for me.'
+                  : '请为我生成一个${styleName}风格的冥想场景内容。')
+              : (isEnglish 
+                  ? 'Please generate a meditation scene content for me.'
+                  : '请为我生成一个冥想场景内容。'),
         }
       ],
       'stream': stream,
@@ -360,8 +388,35 @@ class DeepSeekService {
 
   // ----------------- Prompt 模板 -----------------
 
-  static String _dreamSceneSystemPrompt(String stylePrompt, String? styleKeywords) =>
-      '''你是一个专业的梦境编织者，需要生成用于AI绘画的提示词和诗意解释。
+  static String _dreamSceneSystemPrompt(String stylePrompt, String? styleKeywords, bool isEnglish) =>
+      isEnglish ? '''You are a professional dream weaver who needs to generate prompts for AI painting and poetic explanations.
+$stylePrompt
+
+Please output strictly in the following JSON format, without any other text:
+{
+  "prompts": ["Scene 1 prompt", "Scene 2 prompt", ...],
+  "explanations": ["Scene 1 poetic explanation", "Scene 2 poetic explanation", ...]
+}
+
+Prompt requirements:
+1. Must describe in English
+2. Precisely describe every detail of the scene
+3. Include the following elements:
+   - Scene type (e.g., forest, city, ocean, etc.)
+   - Time (e.g., sunset, night, dawn, etc.)
+   - Weather (e.g., foggy, rainy, clear, etc.)
+   - Main objects and elements
+   - Lighting effects
+   - Atmosphere and style
+4. Separate elements with commas
+5. Generate 3-5 prompts for each scene
+${styleKeywords != null ? '6. Must reflect the style characteristics of $styleKeywords' : ''}
+
+Poetic explanation requirements:
+1. Describe in English
+2. Short and beautiful, full of poetry
+3. Control length to within 30 words
+4. Should be subtle and full of artistic conception''' : '''你是一个专业的梦境编织者，需要生成用于AI绘画的提示词和诗意解释。
 $stylePrompt
 
 请严格按照以下JSON格式输出，不要有任何其他文字：
@@ -499,8 +554,24 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 
 请直接输出一句简短的灵感建议，必须包含Emoji表情，不需要任何其他格式标记或解释。''';
 
-  static String _meditationSceneSystemPrompt(String stylePrompt, String? styleKeywords, String? styleDescription) =>
-      '''你是一位专业的冥想引导师，需要为用户生成冥想场景的引导内容和图片描述。
+  static String _meditationSceneSystemPrompt(String stylePrompt, String? styleKeywords, String? styleDescription, bool isEnglish) {
+    String basePrompt = isEnglish 
+        ? '''You are a professional meditation guide who needs to generate meditation scene guidance content and image descriptions for users.
+$stylePrompt
+
+Please output strictly in the following JSON format, without any other text:
+{
+  "text": "Meditation guidance text",
+  "image_prompt": "Image description"
+}
+
+Meditation guidance text requirements:
+1. Describe in English
+2. Control length to around 50 words
+3. Language should be calm, soothing, and poetic
+4. Should help users relax and enter a meditative state
+5. Should reflect present moment awareness and inner tranquility'''
+        : '''你是一位专业的冥想引导师，需要为用户生成冥想场景的引导内容和图片描述。
 $stylePrompt
 
 请严格按照以下JSON格式输出，不要有任何其他文字：
@@ -514,11 +585,33 @@ $stylePrompt
 2. 长度控制在50字左右
 3. 语言要平静、舒缓、富有诗意
 4. 能够帮助用户放松身心，进入冥想状态
-5. 要体现当下的觉察和内心的宁静
-${styleKeywords != null ? '6. 要融入$styleKeywords的风格特征' : ''}
-${styleDescription != null ? '7. 要体现$styleDescription的氛围' : ''}
+5. 要体现当下的觉察和内心的宁静''';
 
-图片描述要求：
+    if (styleKeywords != null) {
+      basePrompt += isEnglish 
+          ? '\n6. Should incorporate the style characteristics of $styleKeywords'
+          : '\n6. 要融入$styleKeywords的风格特征';
+    }
+    
+    if (styleDescription != null) {
+      basePrompt += isEnglish 
+          ? '\n7. Should reflect the atmosphere of $styleDescription'
+          : '\n7. 要体现$styleDescription的氛围';
+    }
+
+    basePrompt += isEnglish 
+        ? '''\n\nImage description requirements:
+1. Must describe in English
+2. Precisely describe every detail of the meditation scene
+3. Include the following elements:
+   - Scene type (e.g., forest, mountain, ocean, garden, etc.)
+   - Time (e.g., sunset, dawn, twilight, etc.)
+   - Weather and lighting (e.g., soft light, golden hour, misty, etc.)
+   - Main elements and atmosphere
+   - Color coordination
+4. Separate elements with commas
+5. Create a peaceful, serene meditation atmosphere'''
+        : '''\n\n图片描述要求：
 1. 必须用英文描述
 2. 要精确描述冥想场景的每个细节
 3. 包含以下要素：
@@ -528,13 +621,32 @@ ${styleDescription != null ? '7. 要体现$styleDescription的氛围' : ''}
    - 主要元素和氛围
    - 色彩搭配
 4. 使用逗号分隔各个要素
-5. 要营造宁静、祥和的冥想氛围
-${styleKeywords != null ? '6. 必须体现$styleKeywords的视觉风格' : ''}
-${styleDescription != null ? '7. 要符合$styleDescription的美学特征' : ''}
+5. 要营造宁静、祥和的冥想氛围''';
 
-示例格式：
+    if (styleKeywords != null) {
+      basePrompt += isEnglish 
+          ? '\n6. Must reflect the visual style of $styleKeywords'
+          : '\n6. 必须体现$styleKeywords的视觉风格';
+    }
+    
+    if (styleDescription != null) {
+      basePrompt += isEnglish 
+          ? '\n7. Must conform to the aesthetic characteristics of $styleDescription'
+          : '\n7. 要符合$styleDescription的美学特征';
+    }
+
+    basePrompt += isEnglish 
+        ? '''\n\nExample format:
+{
+  "text": "Breathe deeply, feel the tranquility within your heart as clear as lake water, let thoughts drift gently like clouds, in this moment, you merge perfectly with the energy of the universe.",
+  "image_prompt": "serene mountain lake at sunset, soft golden light, misty atmosphere, peaceful meditation spot, lotus flowers, gentle ripples, warm colors, tranquil nature scene, spiritual ambiance"
+}'''
+        : '''\n\n示例格式：
 {
   "text": "深深吸气，感受内心的宁静如湖水般清澈，让思绪如云朵般轻柔飘过，在这一刻，你与宇宙的能量完美融合。",
   "image_prompt": "serene mountain lake at sunset, soft golden light, misty atmosphere, peaceful meditation spot, lotus flowers, gentle ripples, warm colors, tranquil nature scene, spiritual ambiance"
 }''';
+
+    return basePrompt;
+  }
 }
