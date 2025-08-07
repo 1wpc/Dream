@@ -170,8 +170,9 @@ class _InspirationPageState extends State<InspirationPage>
               // 底部提示
               Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Icon(
                       Icons.swipe,
@@ -185,6 +186,7 @@ class _InspirationPageState extends State<InspirationPage>
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.6),
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

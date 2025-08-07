@@ -67,6 +67,64 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
     }
   }
 
+  // 构建分段显示的解梦内容
+  List<Widget> _buildDreamContentBlocks(String content) {
+    // 移除HTML标签
+    String cleanContent = content.replaceAll(RegExp(r'<[^>]*>'), '');
+    
+    // 按段落分割内容（通过双换行符、单换行符或特定标点符号）
+    List<String> paragraphs = cleanContent
+        .split(RegExp(r'\n\s*\n|。\s*(?=[一二三四五六七八九十])|。\s*(?=\d+[、.])|\n(?=\d+[、.])|\n(?=[一二三四五六七八九十])'))
+        .where((p) => p.trim().isNotEmpty)
+        .map((p) => p.trim())
+        .toList();
+    
+    // 如果没有明显的段落分割，尝试按句号分割
+    if (paragraphs.length == 1 && paragraphs[0].length > 100) {
+      paragraphs = paragraphs[0]
+          .split('。')
+          .where((s) => s.trim().isNotEmpty)
+          .map((s) => s.trim() + '。')
+          .toList();
+      // 移除最后一个多余的句号
+      if (paragraphs.isNotEmpty && paragraphs.last.endsWith('。。')) {
+        paragraphs[paragraphs.length - 1] = paragraphs.last.substring(0, paragraphs.last.length - 1);
+      }
+    }
+    
+    List<Widget> blocks = [];
+    
+    for (int i = 0; i < paragraphs.length; i++) {
+      if (paragraphs[i].trim().isEmpty) continue;
+      
+      blocks.add(
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            paragraphs[i],
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return blocks;
+  }
+
   // 调用在线周公解梦API
   Future<Map<String, dynamic>?> _fetchDreamInterpretation(String keyword) async {
     const url = "https://eolink.o.apispace.com/zgjm/common/dream/searchDreamDetail";
@@ -232,15 +290,8 @@ class _ZhougongDreamPageState extends State<ZhougongDreamPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // 使用正则表达式移除HTML标签
-                          Text(
-                            _dreamResult!.replaceAll(RegExp(r'<[^>]*>'), ''),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              height: 1.6,
-                            ),
-                          ),
+                          // 将内容按段落分割并分别显示
+                          ..._buildDreamContentBlocks(_dreamResult!),
                         ],
                       ),
                     ),

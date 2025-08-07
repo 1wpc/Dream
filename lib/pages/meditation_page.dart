@@ -134,10 +134,9 @@ class _MeditationPageState extends State<MeditationPage>
               ),
               
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // 标题
                       Text(
@@ -161,7 +160,7 @@ class _MeditationPageState extends State<MeditationPage>
                         textAlign: TextAlign.center,
                       ),
                       
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 30),
                       
                       // 时长选择
                       Text(
@@ -219,7 +218,7 @@ class _MeditationPageState extends State<MeditationPage>
                         }).toList(),
                       ),
                       
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 30),
                       
                       // 风格选择
                       Text(
@@ -318,14 +317,18 @@ class _MeditationPageState extends State<MeditationPage>
                         ),
                       ),
                       
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 30),
                       
                       // 开始按钮
                       GestureDetector(
                         onTap: _startMeditation,
                         child: Container(
-                          width: 200,
+                          constraints: const BoxConstraints(
+                            minWidth: 200,
+                            maxWidth: 300,
+                          ),
                           height: 60,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [
@@ -350,6 +353,7 @@ class _MeditationPageState extends State<MeditationPage>
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
