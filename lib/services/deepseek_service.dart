@@ -74,12 +74,12 @@ class DeepSeekService {
   }
 
   // AI解梦功能 - 流式输出版本
-  static Stream<String> interpretDreamStream(String dreamTitle, String dreamContent) async* {
+  static Stream<String> interpretDreamStream(String dreamTitle, String dreamContent, {LanguageService? languageService}) async* {
     final dio = ApiService.dio;
     try {
       final response = await dio.post<ResponseBody>(
         _chatPath,
-        data: _buildInterpretDreamPayload(dreamTitle, dreamContent, stream: true),
+        data: _buildInterpretDreamPayload(dreamTitle, dreamContent, languageService: languageService, stream: true),
         options: Options(responseType: ResponseType.stream),
       );
 
@@ -257,18 +257,22 @@ class DeepSeekService {
   static Map<String, dynamic> _buildInterpretDreamPayload(
     String title,
     String content, {
+    LanguageService? languageService,
     required bool stream,
   }) {
+    final isEnglish = languageService?.isEnglish ?? false;
     return {
       'model': 'deepseek-chat',
       'messages': [
         {
           'role': 'system',
-          'content': _interpretDreamSystemPrompt(),
+          'content': _interpretDreamSystemPrompt(isEnglish),
         },
         {
           'role': 'user',
-          'content': '我做了一个梦，梦境标题是:"$title"，梦境内容是:"$content"。请帮我解析这个梦境的含义。',
+          'content': isEnglish 
+              ? 'I had a dream with the title: "$title" and the content: "$content". Please help me interpret the meaning of this dream.'
+              : '我做了一个梦，梦境标题是:"$title"，梦境内容是:"$content"。请帮我解析这个梦境的含义。',
         }
       ],
       'stream': stream,
@@ -478,7 +482,47 @@ ${styleKeywords != null ? '7. 必须体现$styleKeywords的风格特征' : ''}
 5. 解释之间要有情感上的联系，形成一个完整的故事
 6. 可以包含一些哲理性的思考''';
 
-  static String _interpretDreamSystemPrompt() =>
+  static String _interpretDreamSystemPrompt(bool isEnglish) => isEnglish ? 
+      '''You are an experienced psychologist and dream analyst who specializes in analyzing the deep meanings of dreams from a psychological perspective.
+
+Please provide professional, gentle, and insightful dream interpretation for users. Your analysis should:
+
+1. **Clear Structure**: Divided into several parts for analysis
+2. **Psychological Basis**: Based on psychological theories from Freud, Jung, etc.
+3. **Positive Guidance**: Avoid negative interpretations, analyze from positive angles
+4. **Personalized**: Combined with specific details of the dream
+5. **Practical Advice**: Provide inspiration and suggestions for life
+
+Please use the following markdown format:
+
+**🔮 Dream Overview**
+
+Briefly summarize the main content and emotional tone of the dream.
+
+**💭 Psychological Meaning**
+
+Analyze the inner state and subconscious information reflected by the dream from a psychological perspective.
+
+**🌟 Symbolic Interpretation**
+
+Explain the symbolic meaning of the main elements in the dream.
+
+**💡 Life Insights**
+
+Combined with the dream content, provide suggestions and inspiration for real life.
+
+**🌸 Positive Message**
+
+End the analysis with warm words and give positive energy.
+
+Format requirements:
+- Use markdown syntax, titles in **text** format
+- Leave a blank line between each section
+- Important words can be emphasized with **bold**
+- Answer in English, with a gentle and professional tone
+- Avoid overly esoteric terminology
+- Control word count between 300-500 words
+- Be empathetic and healing''' :
       '''你是一位经验丰富的心理学家和梦境解析师，擅长从心理学角度分析梦境的深层含义。
 
 请为用户提供专业、温和且富有洞察力的梦境解析。你的解析应该：

@@ -6,19 +6,18 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:provider/provider.dart';
-import '../pages/dream_style_selection_page.dart';
 import '../services/deepseek_service.dart';
 import '../services/language_service.dart';
 
 
 class SmartMeditationPage extends StatefulWidget {
   final int duration; // 冥想时长（分钟）
-  final DreamStyle dreamStyle; // 选择的风格
+  final String musicFileName; // 选择的音乐文件名
 
   const SmartMeditationPage({
     Key? key,
     required this.duration,
-    required this.dreamStyle,
+    required this.musicFileName,
   }) : super(key: key);
 
   @override
@@ -29,7 +28,6 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     with TickerProviderStateMixin {
   // 动画控制器
   late AnimationController _breathingController;
-  late AnimationController _rippleController;
   
   // 冥想状态
   bool _isPlaying = false;
@@ -79,18 +77,13 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
       duration: const Duration(seconds: 4),
       vsync: this,
     );
-    
-    _rippleController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
   }
   
 
   
   Future<void> _initAudioPlayer() async {
     try {
-      await _audioPlayer.setSource(AssetSource('audio/dream_music.mp3'));
+      await _audioPlayer.setSource(AssetSource('audio/${widget.musicFileName}'));
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
       setState(() {
         _isMusicPlaying = true;
@@ -108,7 +101,6 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     });
     
     _breathingController.repeat(reverse: true);
-    _rippleController.repeat();
     
     // 启动本地计时器
     _startCountdown();
@@ -219,9 +211,9 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     try {
       final languageService = Provider.of<LanguageService>(context, listen: false);
       final stream = DeepSeekService.generateMeditationSceneStream(
-        styleKeywords: widget.dreamStyle.keywords,
-        styleName: widget.dreamStyle.name,
-        styleDescription: widget.dreamStyle.description,
+        styleKeywords: '冥想,放松,宁静',
+        styleName: '冥想',
+        styleDescription: '宁静的冥想场景',
         languageService: languageService,
       );
       
@@ -263,7 +255,7 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     final random = Random();
     return {
       'text': defaultTexts[random.nextInt(defaultTexts.length)],
-      'image_prompt': '${widget.dreamStyle.description}${localizations.meditationSceneSuffix}',
+      'image_prompt': '宁静的冥想场景${localizations.meditationSceneSuffix}',
       'image_url': 'https://picsum.photos/800/600?random=${random.nextInt(1000)}'
     };
   }
@@ -287,7 +279,6 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     });
     
     _breathingController.stop();
-    _rippleController.stop();
     _quoteTimer?.cancel();
     _sceneTimer?.cancel();
     
@@ -338,12 +329,10 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
   @override
   void dispose() {
     _breathingController.dispose();
-    _rippleController.dispose();
     _countdownTimer?.cancel();
     _quoteTimer?.cancel();
     _sceneTimer?.cancel();
     _audioPlayer.dispose();
-
     super.dispose();
   }
   
@@ -534,61 +523,71 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const Spacer(),
+          const Spacer(flex: 2),
           
           // 呼吸动画
           _buildBreathingAnimation(),
           
           const SizedBox(height: 40),
           
-          // 冥想文字
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1,
+          // 冥想文字 - 使用Flexible确保不会溢出
+          Flexible(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  _scenes[_currentSceneIndex]['text'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    height: 1.6,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // 名言
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    _quotes[_currentQuoteIndex],
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _scenes[_currentSceneIndex]['text'] ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        height: 1.6,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: null,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // 名言
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        _quotes[_currentQuoteIndex],
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: null,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           
-          const Spacer(),
+          const Spacer(flex: 1),
         ],
       ),
     );
@@ -598,47 +597,14 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 外层涟漪效果
-        AnimatedBuilder(
-          animation: _rippleController,
-          builder: (context, child) {
-            return Container(
-              width: 280 + (_rippleController.value * 80),
-              height: 280 + (_rippleController.value * 80),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF8B9AFF).withOpacity(0.2 - (_rippleController.value * 0.2)),
-                  width: 1.5,
-                ),
-              ),
-            );
-          },
-        ),
         
-        // 中层涟漪效果
-        AnimatedBuilder(
-          animation: _rippleController,
-          builder: (context, child) {
-            return Container(
-              width: 220 + (_rippleController.value * 60),
-              height: 220 + (_rippleController.value * 60),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF6C7CE7).withOpacity(0.3 - (_rippleController.value * 0.3)),
-                  width: 2,
-                ),
-              ),
-            );
-          },
-        ),
-        
-        // 主呼吸圆圈
+        // 主呼吸圆圈 - 吸气时变小，呼气时变大
         AnimatedBuilder(
           animation: _breathingController,
           builder: (context, child) {
-            final breathingSize = 160 + (_breathingController.value * 60);
+            // 反转动画值：0.0时最大(呼气)，1.0时最小(吸气)
+            final breathingValue = 1.0 - _breathingController.value;
+            final breathingSize = 120 + (breathingValue * 80);
             return Container(
               width: breathingSize,
               height: breathingSize,
@@ -656,8 +622,8 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF8B9AFF).withOpacity(0.3),
-                    blurRadius: 20 + (_breathingController.value * 10),
-                    spreadRadius: 5,
+                    blurRadius: 15 + (breathingValue * 15),
+                    spreadRadius: 3 + (breathingValue * 4),
                   ),
                 ],
               ),
@@ -665,18 +631,20 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
           },
         ),
         
-        // 内层装饰圆圈
+        // 内层装饰圆圈 - 与主圆圈同步呼吸
         AnimatedBuilder(
           animation: _breathingController,
           builder: (context, child) {
+            // 反转动画值：0.0时最大(呼气)，1.0时最小(吸气)
+            final breathingValue = 1.0 - _breathingController.value;
             return Container(
-              width: 80 + (_breathingController.value * 20),
-              height: 80 + (_breathingController.value * 20),
+              width: 60 + (breathingValue * 30),
+              height: 60 + (breathingValue * 30),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.1),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withOpacity(0.3 + (breathingValue * 0.2)),
                   width: 1,
                 ),
               ),
@@ -684,86 +652,21 @@ class _SmartMeditationPageState extends State<SmartMeditationPage>
           },
         ),
         
-        // 中心呼吸提示
-        AnimatedBuilder(
-          animation: _breathingController,
-          builder: (context, child) {
-            final isInhaling = _breathingController.value > 0.5;
-            final progress = _breathingController.value;
-            
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 主要文字
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    isInhaling ? AppLocalizations.of(context)!.inhale : AppLocalizations.of(context)!.exhale,
-                    key: ValueKey(isInhaling),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2,
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xFF8B9AFF).withOpacity(0.5),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // 进度指示器
-                Container(
-                  width: 60,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 60 * progress,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF8B9AFF),
-                            Color(0xFF6C7CE7),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF8B9AFF).withOpacity(0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 6),
-                
-                // 辅助提示文字
-                Text(
-                  isInhaling ? AppLocalizations.of(context)!.feelEnergyFlow : AppLocalizations.of(context)!.releaseTension,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            );
-          },
+        // 中心装饰点
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.8),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B9AFF).withOpacity(0.6),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
         ),
       ],
     );

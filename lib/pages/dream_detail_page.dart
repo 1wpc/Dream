@@ -5,6 +5,8 @@ import 'dart:io';
 import 'edit_dream_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../services/language_service.dart';
 
 class DreamDetailPage extends StatefulWidget {
   final DreamRecord dream;
@@ -146,6 +148,7 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
       await for (final chunk in DeepSeekService.interpretDreamStream(
         widget.dream.title,
         widget.dream.content,
+        languageService: Provider.of<LanguageService>(context, listen: false),
       )) {
         setState(() {
           _streamingText += chunk;
@@ -714,12 +717,14 @@ class _DreamDetailPageState extends State<DreamDetailPage> with TickerProviderSt
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
-                                              Text(
-                                                AppLocalizations.of(context)!.aiInterpretationAnalysis,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF374151),
+                                              Expanded(
+                                                child: Text(
+                                                  AppLocalizations.of(context)!.aiInterpretationAnalysis,
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF374151),
+                                                  ),
                                                 ),
                                               ),
                                               if (_isInterpreting) ...[

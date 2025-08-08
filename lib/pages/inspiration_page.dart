@@ -12,7 +12,6 @@ class InspirationPage extends StatefulWidget {
 
 class _InspirationPageState extends State<InspirationPage>
     with TickerProviderStateMixin {
-  late AnimationController _floatingController;
   late AnimationController _cardController;
   late PageController _pageController;
   
@@ -24,18 +23,12 @@ class _InspirationPageState extends State<InspirationPage>
   void initState() {
     super.initState();
     
-    _floatingController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    );
-    
     _cardController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     
     _pageController = PageController();
-    _floatingController.repeat();
     
     // 移除自动生成灵感，改为用户主动触发
     // _generateNewInspiration();
@@ -43,7 +36,6 @@ class _InspirationPageState extends State<InspirationPage>
 
   @override
   void dispose() {
-    _floatingController.dispose();
     _cardController.dispose();
     _pageController.dispose();
     super.dispose();
@@ -202,17 +194,9 @@ class _InspirationPageState extends State<InspirationPage>
 
   Widget _buildEmptyState() {
     return Center(
-      child: AnimatedBuilder(
-        animation: _floatingController,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              0,
-              10 * (0.5 - (_floatingController.value - 0.5).abs()),
-            ),
-            child: GestureDetector(
-              onTap: _generateNewInspiration,
-              child: Container(
+      child: GestureDetector(
+        onTap: _generateNewInspiration,
+        child: Container(
                 padding: const EdgeInsets.all(40),
                 margin: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -251,9 +235,6 @@ class _InspirationPageState extends State<InspirationPage>
                   ],
                 ),
               ),
-            ),
-          );
-        },
       ),
     );
   }
