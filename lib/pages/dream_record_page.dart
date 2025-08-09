@@ -23,6 +23,10 @@ class _DreamRecordPageState extends State<DreamRecordPage>
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  
+  // 日期筛选相关状态
+  DateTime? _selectedDate;
+  bool _isDateFiltering = false;
 
   @override
   void initState() {
@@ -72,12 +76,79 @@ class _DreamRecordPageState extends State<DreamRecordPage>
   void _searchDreams(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredDreams = _dreams;
+        _filteredDreams = _selectedDate != null ? _filterDreamsByDate(_dreams) : _dreams;
       } else {
-        _filteredDreams = _dreams.where((dream) {
+        List<DreamRecord> searchResults = _dreams.where((dream) {
           return dream.title.toLowerCase().contains(query.toLowerCase()) ||
                  dream.content.toLowerCase().contains(query.toLowerCase());
         }).toList();
+        _filteredDreams = _selectedDate != null ? _filterDreamsByDate(searchResults) : searchResults;
+      }
+    });
+  }
+
+  // 根据选择的日期筛选梦境记录
+  List<DreamRecord> _filterDreamsByDate(List<DreamRecord> dreams) {
+    if (_selectedDate == null) return dreams;
+    
+    return dreams.where((dream) {
+      try {
+        final dreamDate = DateTime.parse(dream.time);
+        return dreamDate.year == _selectedDate!.year &&
+               dreamDate.month == _selectedDate!.month &&
+               dreamDate.day == _selectedDate!.day;
+      } catch (e) {
+        return false;
+      }
+    }).toList();
+  }
+
+  // 显示日期选择器
+  Future<void> _showDatePicker() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      locale: const Locale('zh', 'CN'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.purple.shade600,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _isDateFiltering = true;
+        _filteredDreams = _filterDreamsByDate(_dreams);
+        // 如果正在搜索，也要应用搜索筛选
+        if (_searchController.text.isNotEmpty) {
+          _searchDreams(_searchController.text);
+        }
+      });
+    }
+  }
+
+  // 清除日期筛选
+  void _clearDateFilter() {
+    setState(() {
+      _selectedDate = null;
+      _isDateFiltering = false;
+      // 重新应用搜索筛选（如果有的话）
+      if (_searchController.text.isNotEmpty) {
+        _searchDreams(_searchController.text);
+      } else {
+        _filteredDreams = _dreams;
       }
     });
   }
@@ -501,19 +572,25 @@ class _DreamRecordPageState extends State<DreamRecordPage>
               onPressed: _toggleSearch,
               tooltip: _isSearching ? AppLocalizations.of(context)!.closeSearch : AppLocalizations.of(context)!.searchDreams,
             ),
-          if (_dreams.isNotEmpty && !_isSearching)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Text(
-                  AppLocalizations.of(context)!.totalDreams(_dreams.length),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
+          if (_dreams.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                Icons.calendar_today,
+                color: _isDateFiltering ? Colors.yellow.shade300 : Colors.white,
               ),
+              onPressed: _showDatePicker,
+              tooltip: '选择日期筛选',
             ),
+          if (_isDateFiltering)
+            IconButton(
+              icon: const Icon(
+                Icons.clear,
+                color: Colors.white,
+              ),
+              onPressed: _clearDateFilter,
+              tooltip: '清除日期筛选',
+            ),
+
           if (_isSearching && _filteredDreams.length != _dreams.length)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -524,6 +601,20 @@ class _DreamRecordPageState extends State<DreamRecordPage>
                     color: Colors.white70,
                     fontSize: 14,
                   ),
+                ),
+              ),
+            ),
+          if (_isDateFiltering)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  '${DateFormat('MM月dd日').format(_selectedDate!)} (${_filteredDreams.length})',
+                  style: TextStyle(
+                     color: Colors.yellow.shade300,
+                     fontSize: 14,
+                     fontWeight: FontWeight.w500,
+                   ),
                 ),
               ),
             ),
